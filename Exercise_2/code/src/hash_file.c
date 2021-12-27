@@ -4,6 +4,7 @@
 
 #include "bf.h"
 #include "hash_file.h"
+#include "sht_file.h"
 
 
 #define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) )	// max records per block
