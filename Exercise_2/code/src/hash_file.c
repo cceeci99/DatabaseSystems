@@ -249,7 +249,7 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	return HT_OK;
 }
 
-HT_ErrorCode HT_InsertEntry(int indexDesc, Record record) {
+HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int* tupleID, UpdateRecordArray *updateArray) {
 	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;

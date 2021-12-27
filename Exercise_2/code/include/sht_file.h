@@ -2,6 +2,7 @@
 #define HASH_FILE_H
 
 #include "hash_file.h"
+#define MAX_OPEN_FILES 20
 
 typedef enum HT_ErrorCode {
   HT_OK,
@@ -16,8 +17,8 @@ typedef struct Record {
 } Record;
 
 typedef struct{
-char index_key[20];
-int tupleId;  /*Ακέραιος που προσδιορίζει το block και τη θέση μέσα στο block στην οποία     έγινε η εισαγωγή της εγγραφής στο πρωτεύον ευρετήριο.*/ 
+	char index_key[20];
+	int tupleId;  /*Ακέραιος που προσδιορίζει το block και τη θέση μέσα στο block στην οποία έγινε η εισαγωγή της εγγραφής στο πρωτεύον ευρετήριο.*/ 
 }SecondaryRecord;
 
 typedef struct {  //μπορειτε να αλλαξετε τη δομη συμφωνα  με τις ανάγκες σας
@@ -28,6 +29,18 @@ typedef struct {  //μπορειτε να αλλαξετε τη δομη συμ�
 	
 } UpdateRecordArray;
 
+//
+typedef struct SHT_INFO{
+	int primaryIndex;
+	int fd;
+	int global_depth;
+	int inserted;
+	int no_buckets;
+	int no_hash_blocks;
+	const char* sfilename;
+} SHT_INFO;
+
+SHT_INFO open_sfiles[MAX_OPEN_FILES];
 
 HT_ErrorCode SHT_Init();
 
