@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "bf.h"
+#include "ht.h"
 #include "hash_file.h"
 
 #define RECORDS_NUM 1000 // you can change it if you want

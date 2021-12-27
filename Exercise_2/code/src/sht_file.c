@@ -3,8 +3,8 @@
 #include <string.h>
 
 #include "bf.h"
+#include "ht.h"
 #include "sht_file.h"
-#define MAX_OPEN_FILES 20
 
 #define CALL_BF(call)       \
 {                           \

@@ -1,20 +1,9 @@
-#ifndef HASH_FILE_H
-#define HASH_FILE_H
+#ifndef SHT_FILE_H
+#define SHT_FILE_H
 
+#include "ht.h"
 #include "hash_file.h"
-#define MAX_OPEN_FILES 20
 
-typedef enum HT_ErrorCode {
-  HT_OK,
-  HT_ERROR
-} HT_ErrorCode;
-
-typedef struct Record {
-	int id;
-	char name[15];
-	char surname[20];
-	char city[20];
-} Record;
 
 typedef struct{
 	char index_key[20];
@@ -29,18 +18,6 @@ typedef struct {  //μπορειτε να αλλαξετε τη δομη συμ�
 	
 } UpdateRecordArray;
 
-//
-typedef struct SHT_INFO{
-	int primaryIndex;
-	int fd;
-	int global_depth;
-	int inserted;
-	int no_buckets;
-	int no_hash_blocks;
-	const char* sfilename;
-} SHT_INFO;
-
-SHT_INFO open_sfiles[MAX_OPEN_FILES];
 
 HT_ErrorCode SHT_Init();
 
