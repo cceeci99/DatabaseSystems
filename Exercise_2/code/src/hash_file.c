@@ -53,6 +53,8 @@ HT_ErrorCode HT_Init() {
 		open_files[i].no_buckets = -1;
 		open_files[i].no_hash_blocks = -1;
 		open_files[i].filename = NULL;
+		open_files[i].index_type = -1;
+		open_files[i].index_key = NULL;
 	}
  	return HT_OK;
 }
@@ -77,7 +79,7 @@ HT_ErrorCode HT_CreateIndex(const char *filename, int depth) {
 	memset(metadata + metadata_size, 0, BF_BLOCK_SIZE);
 
 	// Update hash_id in metadata block
-	char* hash_id = "HashFile";
+	char* hash_id = "HashFile";			// 
 	memcpy(metadata, hash_id, HASH_ID_LEN * sizeof(char));
 	metadata_size += HASH_ID_LEN * sizeof(char);
 
@@ -201,13 +203,14 @@ HT_ErrorCode HT_OpenIndex(const char *filename, int *indexDesc) {
 	int flag = 1, i = 0;
 	while (flag && i < MAX_OPEN_FILES) {
 		if (open_files[i].fd == -1) {  // Find first available position
-			printf("Attaching hash file with name '%s', fd=%d, depth=%d, no_hash_blocks=%d to open_files[%d]\n", filename, fd, depth, no_hash_blocks, i);
+			printf("Attaching primary index hash file with name '%s', fd=%d, depth=%d, no_hash_blocks=%d to open_files[%d]\n", filename, fd, depth, no_hash_blocks, i);
 			open_files[i].fd = fd;
 			open_files[i].depth = depth;
 			open_files[i].inserted = 0;
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = filename;
+			open_files[i].index_type = 1;	// primary index
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -242,6 +245,7 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
+	open_files[indexDesc].index_type = -1;
 
 	return HT_OK;
 }

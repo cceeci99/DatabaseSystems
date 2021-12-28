@@ -5,6 +5,7 @@
 
 #include "bf.h"
 #include "ht.h"
+#include "sht_file.h"
 #include "hash_file.h"
 
 #define RECORDS_NUM 1000 // you can change it if you want
@@ -64,8 +65,28 @@ const char* cities[] = {
   }
 
 int main() {
-    // code here
+    BF_Init(LRU);
 
+    CALL_OR_DIE(SHT_Init());
+
+    // code here
+    char *filename = "Secondary_city_hf";
+    char *attrName = "city";
+    int attrLength = strlen(attrName);
+
+    printf("CREATE HASH FILE\n");
+    
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(filename, attrName, attrLength, GLOBAL_DEPTH, "data.db"));
+
+    printf("\nOPEN HASH FILE\n");
+
+    int indexDesc;
+    CALL_OR_DIE(SHT_OpenSecondaryIndex(filename, &indexDesc));
+
+    printf("CLOSE HASH FILE\n");
+    CALL_OR_DIE(SHT_CloseSecondaryIndex(indexDesc));
+    
+    BF_Close();
 
     return 0;
 }

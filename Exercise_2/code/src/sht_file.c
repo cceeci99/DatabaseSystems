@@ -14,7 +14,7 @@
   BF_ErrorCode code = call; \
   if (code != BF_OK) {         \
     BF_PrintError(code);    \
-    return HP_ERROR;        \
+    return HT_ERROR;        \
   }                         \
 }
 
@@ -30,16 +30,17 @@ HT_ErrorCode SHT_Init() {
       open_files[i].no_buckets = -1;
       open_files[i].no_hash_blocks = -1;
       open_files[i].filename = NULL;
+      open_files[i].index_type = -1;
+      open_files[i].index_key = NULL;
     }
     return HT_OK;
 }
 
 HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int attrLength, int depth, char *fileName) {
     //insert code here
-    printf("Creating a secondary index hash file with name %s, on 
-    key %s, with corresponding primary index file %s\n", sfileName attrName, fileName);
+    printf("Creating a secondary index hash file with name %s, on key %s, with corresponding primary index file %s\n", sfileName, attrName, fileName);
 
-    CALL_BF(BF_CreateFile(sfilename)); 
+    CALL_BF(BF_CreateFile(sfileName)); 
 
     int fd;
     CALL_BF(BF_OpenFile(sfileName, &fd));
@@ -79,7 +80,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     memcpy(metadata+metadata_size, &no_hash_blocks, sizeof(int));
     metadata_size += sizeof(int);
 
-    BF_Block *hash_block, data_block;
+    BF_Block *hash_block, *data_block;
     BF_Block_Init(&hash_block);
     BF_Block_Init(&data_block);
 
@@ -163,13 +164,68 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 		return HT_ERROR;
 	}
     
-    
+    // Fetch its depth and no_hash_blocks
+	int depth, no_hash_blocks;
+	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char), sizeof(int));
+	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1 * sizeof(int), sizeof(int));
+
+	// Unpin metadata block - we just read from it
+	CALL_BF(BF_UnpinBlock(block));
+
+    // Update open_files with an entry of the recently opened hash file
+	int flag = 1, i = 0;
+	while (flag && i < MAX_OPEN_FILES) {
+		if (open_files[i].fd == -1) {  // Find first available position
+			printf("Attaching secondary index hash file with name '%s', fd=%d, depth=%d, no_hash_blocks=%d to open_files[%d]\n", sfileName, fd, depth, no_hash_blocks, i);
+			open_files[i].fd = fd;
+			open_files[i].depth = depth;
+			open_files[i].inserted = 0;
+			open_files[i].no_buckets = 2 << (depth - 1);
+			open_files[i].no_hash_blocks = no_hash_blocks;
+			open_files[i].filename = sfileName;
+			
+            if (strcmp(sfileName, "Secondary_city_hf") == 0){
+                char *src = "city";
+                memcpy(open_files[i].index_key, src, sizeof(char)*strlen(src));
+            }
+            else if (strcmp(sfileName, "Secondary_surname_hf") == 0){
+                char *src =  "surname";
+                memcpy(open_files[i].index_key, src, sizeof(char)*strlen(src));
+            }
+            else{
+                fprintf(stderr, "Error: this is not a valid hash file\n");
+            }
+
+            open_files[i].index_type = 0;	// secondary index
+
+			*indexDesc = i;  // position in open_files array
+			flag = 0;
+		}
+		i++;
+	}
 
     return HT_OK;
 }
 
 HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
     //insert code here
+    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
+		fprintf(stderr, "Error: index out of bounds\n");
+		return HT_ERROR;
+	}
+
+	printf("\nClosing hash file in position %d with name '%s' and fd=%d\n", indexDesc, open_files[indexDesc].filename, open_files[indexDesc].fd);
+	CALL_BF(BF_CloseFile(open_files[indexDesc].fd));
+
+	// Update open_files array
+	open_files[indexDesc].fd = -1;
+	open_files[indexDesc].depth = -1;
+	open_files[indexDesc].inserted = -1;
+	open_files[indexDesc].no_buckets = -1;
+	open_files[indexDesc].no_hash_blocks = -1;
+	open_files[indexDesc].filename = NULL;
+	open_files[indexDesc].index_type = -1;
+    
     return HT_OK;
 }
 
@@ -183,7 +239,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
     return HT_OK;
 }
 
-HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index-key) {
+HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
     //insert code here
     return HT_OK;
 }
@@ -193,7 +249,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
     return HT_OK;
 }
 
-HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index-key) {
+HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
     //insert code here
     return HT_OK;
 }

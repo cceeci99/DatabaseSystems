@@ -5,13 +5,16 @@ bf:
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/bf_main.c -lbf -o ./build/runner -O2
 
 sht:
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/sht_main.c -lbf -o ./build/runner -02
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/sht_main.c  ./src/sht_file.c -lbf -o ./build/runner
 
 all:
 	./run.sh
 
 run:
 	./build/runner files/hash_files/data.db 1000 2
+
+runsht:
+	gdb ./build/runner
 
 time:
 	time ./build/runner files/hash_files/data.db 1000 2
