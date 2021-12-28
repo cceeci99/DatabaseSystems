@@ -183,18 +183,8 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = sfileName;
-			
-            if (strcmp(sfileName, "Secondary_city_hf") == 0){
-                char *src = "city";
-                memcpy(open_files[i].index_key, src, sizeof(char)*strlen(src));
-            }
-            else if (strcmp(sfileName, "Secondary_surname_hf") == 0){
-                char *src =  "surname";
-                memcpy(open_files[i].index_key, src, sizeof(char)*strlen(src));
-            }
-            else{
-                fprintf(stderr, "Error: this is not a valid hash file\n");
-            }
+
+            
 
             open_files[i].index_type = 0;	// secondary index
 
@@ -225,6 +215,7 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
 	open_files[indexDesc].index_type = -1;
+    open_files[indexDesc].index_key = NULL;
     
     return HT_OK;
 }

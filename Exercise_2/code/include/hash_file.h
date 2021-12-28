@@ -47,9 +47,9 @@ HT_ErrorCode HT_CloseFile(
  */
 HT_ErrorCode HT_InsertEntry(
 	int indexDesc,	/* θέση στον πίνακα με τα ανοιχτά αρχεία */
-	Record record,		/* δομή που προσδιορίζει την εγγραφή */
-	int *tupleId,	/* Η θέση της εγγραφής στο πρωτεύον ευρετήριο */
-	UpdateRecordArray *updateArray /* πίνακας με τις αλλαγές που προέκυψαν από την εισαγωγη της νέας εγγραφής */
+	Record record		/* δομή που προσδιορίζει την εγγραφή */
+	// int *tupleId,	/* Η θέση της εγγραφής στο πρωτεύον ευρετήριο */
+	// UpdateRecordArray *updateArray /* πίνακας με τις αλλαγές που προέκυψαν από την εισαγωγη της νέας εγγραφής */
 	);
 
 /*
