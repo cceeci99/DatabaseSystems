@@ -3,6 +3,12 @@
 
 #define MAX_OPEN_FILES 20
 
+#define MAX_DEPTH 13
+#define HASH_ID_LEN 9
+
+ // max buckets per block same for primary and secondary index
+#define HASH_CAP  (int) ( BF_BLOCK_SIZE / sizeof(int) )	
+
 
 typedef enum HT_ErrorCode {
   HT_OK,

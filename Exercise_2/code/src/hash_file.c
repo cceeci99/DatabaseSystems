@@ -3,16 +3,11 @@
 #include <string.h>
 
 #include "bf.h"
-#include "ht.h"
 #include "hash_file.h"
-#include "sht_file.h"
 
+// max records per block for primary index
+#define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) )
 
-#define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) )	// max records per block
-#define HASH_CAP  (int) ( BF_BLOCK_SIZE / sizeof(int) )	                    	// max buckets per block
-
-#define MAX_DEPTH 13
-#define HASH_ID_LEN 9
 
 // Assumptions:
 // - each bucket maps to one block

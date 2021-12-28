@@ -2,7 +2,6 @@
 #define SHT_FILE_H
 
 #include "ht.h"
-#include "hash_file.h"
 
 
 typedef struct{
