@@ -70,8 +70,8 @@ int main() {
     CALL_OR_DIE(SHT_Init());
 
     // code here
-    char *filename = "Secondary_city_hf";
-    char *attrName = "city";
+    char *filename = "bla.db";
+    char *attrName = "surname";
     int attrLength = strlen(attrName);
 
     printf("CREATE HASH FILE\n");

@@ -29,8 +29,9 @@ typedef struct HF_Info {
 	int no_buckets;
 	int no_hash_blocks;
 	const char* filename;
-	int index_type;		// 1 for primary 0 for secondary index
-	char* index_key;	// surname or city or NULL if it's primary index
+
+	//
+	int index_type; 	// 1 for primary 0 for secondary
 } HF_Info;
 
 // Global array

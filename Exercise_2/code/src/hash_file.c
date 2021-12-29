@@ -53,14 +53,14 @@ HT_ErrorCode HT_Init() {
 		open_files[i].no_buckets = -1;
 		open_files[i].no_hash_blocks = -1;
 		open_files[i].filename = NULL;
+		//
 		open_files[i].index_type = -1;
-		open_files[i].index_key = NULL;
 	}
  	return HT_OK;
 }
 
 HT_ErrorCode HT_CreateIndex(const char *filename, int depth) {
-	printf("Creating a hash file with name %s and initial global depth %d\n", filename, depth);
+	printf("Creating a primary index hash file with name %s and initial global depth %d\n", filename, depth);
 
 	CALL_BF(BF_CreateFile(filename)); 
 	
@@ -210,7 +210,8 @@ HT_ErrorCode HT_OpenIndex(const char *filename, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = filename;
-			open_files[i].index_type = 1;	// primary index
+			//
+			open_files[i].index_type = 1;
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -245,8 +246,8 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
+	//
 	open_files[indexDesc].index_type = -1;
-
 	return HT_OK;
 }
 

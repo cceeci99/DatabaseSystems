@@ -24,14 +24,16 @@ HT_ErrorCode SHT_Init() {
 
     // initialize open_files array 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
-      open_files[i].fd = -1;
-      open_files[i].depth = -1;
-      open_files[i].inserted = -1;
-      open_files[i].no_buckets = -1;
-      open_files[i].no_hash_blocks = -1;
-      open_files[i].filename = NULL;
-      open_files[i].index_type = -1;
-      open_files[i].index_key = NULL;
+        open_files[i].fd = -1;
+        open_files[i].depth = -1;
+        open_files[i].inserted = -1;
+        open_files[i].no_buckets = -1;
+        open_files[i].no_hash_blocks = -1;
+        open_files[i].filename = NULL;
+
+        //
+        open_files[i].index_type = -1;
+    
     }
     return HT_OK;
 }
@@ -60,6 +62,21 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     char* hash_id = "HashFile";
     memcpy(metadata, hash_id, HASH_ID_LEN * sizeof(char));
     metadata_size += HASH_ID_LEN*sizeof(char);
+
+    if (strcmp(attrName, "city") == 0){
+        char index_key = 1;
+        memcpy(metadata + metadata_size, &index_key, sizeof(char));
+        metadata_size += sizeof(char);
+    }
+    else if (strcmp(attrName, "surname") == 0){
+        char index_key = 0;
+        memcpy(metadata + metadata_size, &index_key, sizeof(char));
+        metadata_size += sizeof(char);
+    }
+    else{
+        fprintf(stderr, "not available key index\n");
+        return -1;
+    }
 
     // // add to metadata, the fileName of the primary index
     // memcpy(metadata+metadata_size, fileName, strlen(fileName)*sizeof(char));
@@ -163,15 +180,25 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 		fprintf(stderr, "Error: this is not a valid hash file\n");
 		return HT_ERROR;
 	}
+
+    char index_key;
+    memcpy(&index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+    if (index_key){
+        printf("hash file uses city as key\n");
+    }
+    else{
+        printf("hash file uses surname as key\b");
+    }
+
     
     // Fetch its depth and no_hash_blocks
 	int depth, no_hash_blocks;
-	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char), sizeof(int));
-	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1 * sizeof(int), sizeof(int));
+	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char) + sizeof(char), sizeof(int));
+	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + sizeof(char) + 1 * sizeof(int), sizeof(int));
 
 	// Unpin metadata block - we just read from it
 	CALL_BF(BF_UnpinBlock(block));
-
+    
     // Update open_files with an entry of the recently opened hash file
 	int flag = 1, i = 0;
 	while (flag && i < MAX_OPEN_FILES) {
@@ -184,10 +211,8 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = sfileName;
 
-            
-
-            open_files[i].index_type = 0;	// secondary index
-
+            //
+            open_files[i].index_type = 0;       // secondary index
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -214,9 +239,9 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
-	open_files[indexDesc].index_type = -1;
-    open_files[indexDesc].index_key = NULL;
-    
+
+    //    
+    open_files[indexDesc].index_type = -1;
     return HT_OK;
 }
 
