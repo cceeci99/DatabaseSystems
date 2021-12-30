@@ -5,13 +5,13 @@
 #include "bf.h"
 #include "sht_file.h"
 
+#define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) ) // max records per block for primary index
 #define SECONDARY_BLOCK_CAP (int) (BF_BLOCK_SIZE - 2*sizeof(int) / sizeof(SecondaryRecord))	// max records per block for secondary index
-
 
 #define CALL_BF(call)       \
 {                           \
-  BF_ErrorCode code = call; \
-  if (code != BF_OK) {         \
+    BF_ErrorCode code = call; \
+    if (code != BF_OK) {         \
     BF_PrintError(code);    \
     return HT_ERROR;        \
   }                         \
@@ -353,8 +353,8 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
         no_entries++;
         memcpy(data + 1*sizeof(int), &no_entries, sizeof(int));
-        printf("Inserting first secondary entry on data block %d on record pos %d\n", data_block_id, no_entries);
-        printf("Record is: %s , %d\n", record.index_key, record.tupleId);
+        // printf("Inserting first secondary entry on data block %d on record pos %d\n", data_block_id, no_entries);
+        printf("Inserting secondary index record{%s , %d}\n", record.index_key, record.tupleId);
 
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
@@ -368,12 +368,93 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 }
 
 HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
-    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
+    if (sindexDesc < 0 || sindexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
 	}
 
-    
+    printf("Searching record with index key city = %s\n", index_key);
+    // both  files primary and secondary index are open
+    // we have a key of record for example city= "Athens"
+    // secondary index is based on index_key of city
+    // find the record  of secondary index with index_key = "Athens"
+    // find the record of primary index from the tupleId
+
+    BF_Block* block;
+    BF_Block_Init(&block);
+
+    CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, 0, block));
+    char* metadata = BF_Block_GetData(block);
+
+    int no_hash_blocks = open_files[sindexDesc].no_hash_blocks;
+    int* hash_block_ids = malloc(no_hash_blocks*sizeof(int));
+
+    size_t size = HASH_ID_LEN*sizeof(char) + sizeof(char) + 2*sizeof(int);
+    for (int i = 0; i < no_hash_blocks; i++){
+        memcpy(&hash_block_ids[i], metadata + size + i*sizeof(int), sizeof(int));
+    }
+
+    CALL_BF(BF_UnpinBlock(block));
+
+    BF_Block* data_block;
+    BF_Block_Init(&data_block);
+
+    for (int i=0; i<no_hash_blocks; i++){
+        CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, hash_block_ids[i], block));
+        char* hash_data = BF_Block_GetData(block);
+
+        int limit = no_hash_blocks == 1 ? open_files[sindexDesc].no_buckets : HASH_CAP;
+
+        for (int j=0; j<limit; j++){
+            int data_block_id;
+            memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
+
+            CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, data_block_id, data_block));
+            char* data = BF_Block_GetData(data_block);
+
+            int no_records;
+            memcpy(&no_records, data + 1*sizeof(int), sizeof(int));
+
+            SecondaryRecord record;
+            size = 2*sizeof(int);
+            for (int k = 0; k <no_records ; k++){
+
+                // search through secondary index record, those matching the index_key
+                // and then get the corresponding record from the tupleId
+                
+                memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+                
+                if (strcmp(index_key, record.index_key) == 0){
+                    printf("Index_key=%s, TupleId = %d\n", record.index_key, record.tupleId);
+
+                    BF_Block* b;
+                    BF_Block_Init(&b);
+
+                    int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
+                    int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+
+                    printf("Wanted record is on block=%d and position=%d\n", block_pos, record_pos);
+
+                    CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
+                    char* d = BF_Block_GetData(b);
+
+                    Record r;
+                    memcpy(&r, d + 2*sizeof(int) + (record_pos-1)*sizeof(Record), sizeof(Record));
+
+                    printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
+                    
+                    CALL_BF(BF_UnpinBlock(b));
+                }
+            }
+
+            CALL_BF(BF_UnpinBlock(data_block));
+        }
+        CALL_BF(BF_UnpinBlock(block));
+    }
+
+    free(hash_block_ids);
+	BF_Block_Destroy(&block);
+	BF_Block_Destroy(&data_block);
 
     return HT_OK;
 }

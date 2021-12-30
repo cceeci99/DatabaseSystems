@@ -86,6 +86,7 @@ int main() {
       printf("-");
     }
     printf("\n");
+    char temp[30];
     for (int id = 0; id < 4; ++id) {
       record.id = id;
       r = rand() % 12;
@@ -94,6 +95,7 @@ int main() {
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
       r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
+      memcpy(temp, record.city, strlen(record.city)+1);
 
       int tupleId;
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
@@ -110,7 +112,7 @@ int main() {
     printf("\n");
 
     // printf("\n- For all entries :\n");
-    // CALL_OR_DIE(HT_PrintAllEntries(indexDesc, NULL));
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
     // printf("\n");
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));

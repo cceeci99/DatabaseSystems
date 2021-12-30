@@ -328,7 +328,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		printf("Inserting record on hash block %d on data block %d on record pos %d\n", actual_hash_block_id, data_block_id, no_records);
 		*tupleId = data_block_id*BLOCK_CAP+no_records;
 
-
 		// We changed the data block -> set dirty & unpin
 		BF_Block_SetDirty(data_block);
 		CALL_BF(BF_UnpinBlock(data_block));

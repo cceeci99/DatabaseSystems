@@ -8,8 +8,6 @@
 
 #define HASH_CAP  (int) (BF_BLOCK_SIZE / sizeof(int))	// max buckets per block same for primary and secondary index
 
-
-
 typedef enum HT_ErrorCode {
   HT_OK,
   HT_ERROR
