@@ -279,18 +279,18 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
     msb[open_files[indexDesc].depth] = '\0';
     
-    printf("hash id %s\n", msb);
+    // printf("hash id %s\n", msb);
 
     char* tmp;
     int bucket = strtol(msb, &tmp, 2);
-    printf("bucket %d\n", bucket);
+    // printf("bucket %d\n", bucket);
     free(msb);
 
     int hash_block_index = bucket / HASH_CAP;
     int hash_block_pos = bucket & HASH_CAP;
 
-    printf("hash block %d\n",hash_block_index);
-    printf("pos of bucket %d\n", hash_block_pos);
+    // printf("hash block %d\n",hash_block_index);
+    // printf("pos of bucket %d\n", hash_block_pos);
 
     BF_Block* block;
     BF_Block_Init(&block);
@@ -302,7 +302,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     size_t size = HASH_ID_LEN * sizeof(char) + sizeof(char) + 2*sizeof(int);
     memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
 
-    printf("actual hash block id: %d\n", actual_hash_block_id);
+    // printf("actual hash block id: %d\n", actual_hash_block_id);
     
     int no_hash_block = open_files[indexDesc].no_hash_blocks;
     
@@ -327,7 +327,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     int data_block_id;
     memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
 
-    printf("data block id: %d\n", data_block_id);
+    // printf("data block id: %d\n", data_block_id);
 
     // unpin hash block
     CALL_BF(BF_UnpinBlock(block));
@@ -353,6 +353,8 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
         no_entries++;
         memcpy(data + 1*sizeof(int), &no_entries, sizeof(int));
+        printf("Inserting first secondary entry on data block %d on record pos %d\n", data_block_id, no_entries);
+        printf("Record is: %s , %d\n", record.index_key, record.tupleId);
 
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
@@ -366,6 +368,13 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 }
 
 HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
+    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
+		fprintf(stderr, "Error: index out of bounds\n");
+		return HT_ERROR;
+	}
+
+    
+
     return HT_OK;
 }
 
