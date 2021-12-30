@@ -599,6 +599,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record) {
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
 		free(records);
+
 	}
 
 	// One more successfull insertion :)

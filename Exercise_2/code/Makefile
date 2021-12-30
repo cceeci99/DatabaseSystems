@@ -5,7 +5,7 @@ bf:
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/bf_main.c -lbf -o ./build/runner -O2
 
 sht:
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/sht_main.c  ./src/sht_file.c -lbf -o ./build/runner
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/sht_main.c  ./src/sht_file.c ./src/hash_file.c -lbf -o ./build/runner
 
 all:
 	./run.sh
