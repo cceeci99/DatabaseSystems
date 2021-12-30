@@ -17,7 +17,6 @@ typedef struct {  //μπορειτε να αλλαξετε τη δομη συμ�
 	
 } UpdateRecordArray;
 
-
 HT_ErrorCode SHT_Init();
 
 HT_ErrorCode SHT_CreateSecondaryIndex(

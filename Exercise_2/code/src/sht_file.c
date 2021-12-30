@@ -17,9 +17,32 @@
   }                         \
 }
 
+static char* hash_function(const char* index_key){
+    static int no_buckets = 2 << (MAX_DEPTH - 1);
+
+    long sum = 0;
+    long mul = 0;
+
+    for (int i = 0; i < strlen(index_key); i++){
+        mul = (i % 4 == 0) ? 1 : mul * 256;
+        sum += index_key[i] * mul;
+    }
+
+    sum = (int) (abs(sum) % no_buckets);
+
+    static char result[MAX_DEPTH+1];
+    result[0] = '\0';
+
+    for (int z = no_buckets/2; z > 0; z >>= 1){
+        strcat(result, ((sum & z) == z) ? "1" : "0");
+    }
+
+    // printf("%s\n", result);
+    return result;
+}
+
 
 HT_ErrorCode SHT_Init() {
-    //insert code here
 
     // initialize open_files array 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -38,7 +61,6 @@ HT_ErrorCode SHT_Init() {
 }
 
 HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int attrLength, int depth, char *fileName) {
-    //insert code here
     printf("Creating a secondary index hash file with name %s, on key %s, with corresponding primary index file %s\n", sfileName, attrName, fileName);
 
     CALL_BF(BF_CreateFile(sfileName)); 
@@ -74,7 +96,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     }
     else{
         fprintf(stderr, "not available key index\n");
-        return -1;
+        return HT_ERROR;
     }
 
     // // add to metadata, the fileName of the primary index
@@ -162,7 +184,6 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
 }
 
 HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
-    //insert code here
     int fd;
     CALL_BF(BF_OpenFile(sfileName, &fd));
 
@@ -222,7 +243,6 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 }
 
 HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
-    //insert code here
     if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
@@ -245,26 +265,38 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 }
 
 HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
-    //insert code here
+    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES){
+        fprintf(stderr, "Error: index out of bounds\n");
+        return HT_ERROR;
+    }
+
+    char* byte_string = hash_function(record.index_key);
+
+    char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
+    for (int i = 0; i < open_files[indexDesc].depth; i++){
+        msb[i] = byte_string[i];
+    }
+
+    msb[open_files[indexDesc].depth] = '\0';
+    
+    // printf("%s\n", msb);
+
+
     return HT_OK;
 }
 
 HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateArray) {
-    //insert code here
     return HT_OK;
 }
 
 HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
-    //insert code here
     return HT_OK;
 }
 
 HT_ErrorCode SHT_HashStatistics(char *filename) {
-    //insert code here
     return HT_OK;
 }
 
 HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
-    //insert code here
     return HT_OK;
 }

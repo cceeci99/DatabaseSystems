@@ -9,7 +9,7 @@
 #include "hash_file.h"
 
 #define RECORDS_NUM 1000
-#define GLOBAL_DEPTH 2
+#define GLOBAL_DEPTH 4
 #define FILE_NAME "data2.db"
 
 const char* names[] = {
@@ -81,6 +81,13 @@ int main() {
 
     int indexDesc;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(FILE_NAME, &indexDesc));
+
+    int a = 33;
+    SecondaryRecord record;
+    memcpy(record.index_key, "Perdikopanis", (strlen("Perdikopanis")+1));
+    memcpy(&record.tupleId, &a, sizeof(int));
+
+    CALL_OR_DIE(SHT_SecondaryInsertEntry(indexDesc, record));
 
     printf("CLOSE HASH FILE\n");
     CALL_OR_DIE(SHT_CloseSecondaryIndex(indexDesc));
