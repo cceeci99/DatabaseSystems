@@ -71,7 +71,7 @@ int main() {
     CALL_OR_DIE(SHT_Init());
     
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
 
     int indexDesc;
     int sindexDesc;
@@ -81,11 +81,13 @@ int main() {
     Record record;
     srand(time(NULL));
     int r;
+    
     printf("\nINSERT ENTRIES\n");
     for (int i = 0; i < 150; i++) {
       printf("-");
     }
     printf("\n");
+    
     char temp[30];
     for (int id = 0; id < 4; ++id) {
       record.id = id;
@@ -95,7 +97,7 @@ int main() {
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
       r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
-      memcpy(temp, record.city, strlen(record.city)+1);
+      memcpy(temp, record.surname, strlen(record.surname)+1);
 
       int tupleId;
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
@@ -103,7 +105,7 @@ int main() {
   		printf("TupleId=%d\n", tupleId);
 
       SecondaryRecord srecord;
-      memcpy(srecord.index_key, record.city, strlen(record.city)+1);
+      memcpy(srecord.index_key, record.surname, strlen(record.surname)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));

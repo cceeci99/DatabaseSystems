@@ -307,14 +307,14 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     int no_hash_block = open_files[indexDesc].no_hash_blocks;
     
     // get which one index key will use the secondary index ( city or surname )
-    // char which_index_key;
-    // memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
-    // // if (which_index_key){
-    // //     printf("hash file uses city as key\n");
-    // // }
-    // // else{
-    // //     printf("hash file uses surname as key\n");
-    // // }
+    char which_index_key;
+    memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+    if (which_index_key){
+        printf("hash file uses city as key\n");
+    }
+    else{
+        printf("hash file uses surname as key\n");
+    }
 
     // unpin metadata block
     CALL_BF(BF_UnpinBlock(block));
@@ -399,13 +399,13 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
     BF_Block* data_block;
     BF_Block_Init(&data_block);
 
-    for (int i=0; i<no_hash_blocks; i++){
+    for (int i = 0; i < no_hash_blocks; i++){
         CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, hash_block_ids[i], block));
         char* hash_data = BF_Block_GetData(block);
 
         int limit = no_hash_blocks == 1 ? open_files[sindexDesc].no_buckets : HASH_CAP;
 
-        for (int j=0; j<limit; j++){
+        for (int j = 0; j < limit; j++){
             int data_block_id;
             memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
 
