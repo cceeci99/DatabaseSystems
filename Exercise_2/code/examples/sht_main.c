@@ -81,7 +81,7 @@ int main() {
       printf("-");
     }
     printf("\n");
-    for (int id = 0; id < 4; ++id) {
+    for (int id = 0; id < 10; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
