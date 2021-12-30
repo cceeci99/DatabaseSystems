@@ -118,48 +118,48 @@ int main(char argc, char* argv[]) {
 	printf("\n");
 
 	// // Insert entries
-	// Record record;
-	// srand(time(NULL));
-	// int r;
-	// printf("\nINSERT ENTRIES\n");
-	// for (int i = 0; i < 150; i++) {
-	// 	printf("-");
-	// }
-	// printf("\n");
-	// for (int id = 0; id < no_records; ++id) {
-	// 	record.id = id;
-	// 	r = rand() % 12;
-	// 	memcpy(record.name, names[r], strlen(names[r]) + 1);
-	// 	r = rand() % 12;
-	// 	memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-	// 	r = rand() % 10;
-	// 	memcpy(record.city, cities[r], strlen(cities[r]) + 1);
+	Record record;
+	srand(time(NULL));
+	int r;
+	printf("\nINSERT ENTRIES\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
+	for (int id = 0; id < no_records; ++id) {
+		record.id = id;
+		r = rand() % 12;
+		memcpy(record.name, names[r], strlen(names[r]) + 1);
+		r = rand() % 12;
+		memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
+		r = rand() % 10;
+		memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
-	// 	printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
-	// 	CALL_OR_DIE(HT_InsertEntry(indexDesc, record));
-	// }
-	// printf("\n");
+		printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
+		CALL_OR_DIE(HT_InsertEntry(indexDesc, record));
+	}
+	printf("\n");
 
-	// // Print entries
-	// printf("\nPRINT ENTRIES\n");
-	// for (int i = 0; i < 150; i++) {
-	// 	printf("-");
-	// }
-	// printf("\n");
-	// int id = rand() % no_records;
-	// printf("- For id %d :\n", id);
-	// CALL_OR_DIE(HT_PrintAllEntries(indexDesc, &id));	
-	// printf("\n- For all entries :\n");
-	// CALL_OR_DIE(HT_PrintAllEntries(indexDesc, NULL));
-	// printf("\n");
+	// Print entries
+	printf("\nPRINT ENTRIES\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
+	int id = rand() % no_records;
+	printf("- For id %d :\n", id);
+	CALL_OR_DIE(HT_PrintAllEntries(indexDesc, &id));	
+	printf("\n- For all entries :\n");
+	CALL_OR_DIE(HT_PrintAllEntries(indexDesc, NULL));
+	printf("\n");
 
 	// // Hash statistics
-	// printf("\nPRINT HASH STATISTICS\n");
-	// for (int i = 0; i < 150; i++) {
-	// 	printf("-");
-	// }
-	// printf("\n");
-	// CALL_OR_DIE(HashStatistics(filename));
+	printf("\nPRINT HASH STATISTICS\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
+	CALL_OR_DIE(HashStatistics(filename));
 
 	// Close file
 	printf("CLOSE HASH FILE\n");

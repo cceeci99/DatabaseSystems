@@ -6,14 +6,15 @@
 #define MAX_DEPTH 13
 #define HASH_ID_LEN 9
 
- // max buckets per block same for primary and secondary index
-#define HASH_CAP  (int) ( BF_BLOCK_SIZE / sizeof(int) )	
+#define HASH_CAP  (int) (BF_BLOCK_SIZE / sizeof(int))	// max buckets per block same for primary and secondary index
+
 
 
 typedef enum HT_ErrorCode {
   HT_OK,
   HT_ERROR
 } HT_ErrorCode;
+
 
 typedef struct Record {
 	int id;

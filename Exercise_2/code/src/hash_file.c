@@ -5,8 +5,17 @@
 #include "bf.h"
 #include "hash_file.h"
 
-// max records per block for primary index
-#define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) )
+#define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) ) // max records per block for primary index
+
+
+#define CALL_BF(call)         \
+{                             \
+	BF_ErrorCode code = call; \
+	if (code != BF_OK) {      \
+		BF_PrintError(code);  \
+		return HT_ERROR;      \
+	}                         \
+}
 
 
 // Assumptions:
@@ -33,16 +42,6 @@ static char* hash_function(int id) {
     }
 
     return b;
-}
-
-
-#define CALL_BF(call)         \
-{                             \
-	BF_ErrorCode code = call; \
-	if (code != BF_OK) {      \
-		BF_PrintError(code);  \
-		return HT_ERROR;      \
-	}                         \
 }
 
 HT_ErrorCode HT_Init() {
@@ -717,7 +716,7 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 			for (int j = 0; j < limit; j++) {
 				int data_block_id;
 				memcpy(&data_block_id, hash_data + j * sizeof(int), sizeof(int));
-
+				
 				// To avoid printing same records because of buddies
 				if (current_id != data_block_id) {
 					current_id = data_block_id;

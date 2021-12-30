@@ -7,7 +7,7 @@
 typedef struct{
 	char index_key[20];
 	int tupleId;  /*Ακέραιος που προσδιορίζει το block και τη θέση μέσα στο block στην οποία έγινε η εισαγωγή της εγγραφής στο πρωτεύον ευρετήριο.*/ 
-}SecondaryRecord;
+} SecondaryRecord;
 
 typedef struct {  //μπορειτε να αλλαξετε τη δομη συμφωνα  με τις ανάγκες σας
 	char surname[20];

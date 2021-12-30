@@ -8,9 +8,9 @@
 #include "sht_file.h"
 #include "hash_file.h"
 
-#define RECORDS_NUM 1000 // you can change it if you want
-#define GLOBAL_DEPTH 2 // you can change it if you want
-#define FILE_NAME "data.db"
+#define RECORDS_NUM 1000
+#define GLOBAL_DEPTH 2
+#define FILE_NAME "data2.db"
 
 const char* names[] = {
   "Yannis",
@@ -70,18 +70,17 @@ int main() {
     CALL_OR_DIE(SHT_Init());
 
     // code here
-    char *filename = "bla.db";
     char *attrName = "surname";
     int attrLength = strlen(attrName);
 
     printf("CREATE HASH FILE\n");
     
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(filename, attrName, attrLength, GLOBAL_DEPTH, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(FILE_NAME, attrName, attrLength, GLOBAL_DEPTH, "data.db"));
 
     printf("\nOPEN HASH FILE\n");
 
     int indexDesc;
-    CALL_OR_DIE(SHT_OpenSecondaryIndex(filename, &indexDesc));
+    CALL_OR_DIE(SHT_OpenSecondaryIndex(FILE_NAME, &indexDesc));
 
     printf("CLOSE HASH FILE\n");
     CALL_OR_DIE(SHT_CloseSecondaryIndex(indexDesc));

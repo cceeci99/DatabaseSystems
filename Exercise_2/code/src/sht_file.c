@@ -5,8 +5,7 @@
 #include "bf.h"
 #include "sht_file.h"
 
-// max records per block for secondary index
-#define SECONDARY_BLOCK_CAP (int) (BF_BLOCK_SIZE - 2*sizeof(int) / sizeof(SecondaryRecord))	
+#define SECONDARY_BLOCK_CAP (int) (BF_BLOCK_SIZE - 2*sizeof(int) / sizeof(SecondaryRecord))	// max records per block for secondary index
 
 
 #define CALL_BF(call)       \
@@ -245,7 +244,7 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
     return HT_OK;
 }
 
-HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc,SecondaryRecord record) {
+HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     //insert code here
     return HT_OK;
 }
