@@ -250,7 +250,7 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	return HT_OK;
 }
 
-HT_ErrorCode HT_InsertEntry(int indexDesc, Record record) {
+HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
@@ -324,6 +324,10 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record) {
 		// Update data block's number of records
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
+		
+		printf("Inserting record on hash block %d on data block %d on record pos %d\n", actual_hash_block_id, data_block_id, no_records);
+		*tupleId = data_block_id*BLOCK_CAP+no_records;
+
 
 		// We changed the data block -> set dirty & unpin
 		BF_Block_SetDirty(data_block);
@@ -593,7 +597,8 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record) {
 
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
-			if (HT_InsertEntry(indexDesc, records[i]) == HT_ERROR) {
+			int tuple;
+			if (HT_InsertEntry(indexDesc, records[i], &tuple) == HT_ERROR) {
 				return HT_ERROR;
 			}
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
@@ -739,6 +744,7 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 				for (int k = 0; k < no_records; k++) {
 					memcpy(&record, data + sz + k * sizeof(Record), sizeof(Record));
 					printf("id = %d , name = %s , surname = %s , city = %s \n", record.id, record.name, record.surname, record.city);
+					printf("hash block %d, data block %d record %d\n", hash_block_ids[i], data_block_id, k);
 				}
 
 				// Unpin data block
