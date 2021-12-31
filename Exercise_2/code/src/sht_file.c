@@ -307,14 +307,14 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     int no_hash_block = open_files[indexDesc].no_hash_blocks;
     
     // get which one index key will use the secondary index ( city or surname )
-    char which_index_key;
-    memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
-    if (which_index_key){
-        printf("hash file uses city as key\n");
-    }
-    else{
-        printf("hash file uses surname as key\n");
-    }
+    // char which_index_key;
+    // memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+    // if (which_index_key){
+    //     printf("hash file uses city as key\n");
+    // }
+    // else{
+    //     printf("hash file uses surname as key\n");
+    // }
 
     // unpin metadata block
     CALL_BF(BF_UnpinBlock(block));

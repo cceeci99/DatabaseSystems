@@ -4,8 +4,6 @@
 #include <time.h>
 
 #include "bf.h"
-#include "ht.h"
-#include "sht_file.h"
 #include "hash_file.h"
 
 const char* names[] = {
@@ -63,14 +61,14 @@ const char* cities[] = {
 int main() {
     BF_Init(LRU);
 
-    char* pfilename = "/home/users/sdi1900066/YSBD2/Exercise_2/code/files/hash_files/data.db";
-    char* sfilename = "/home/users/sdi1900066/YSBD2/Exercise_2/code/files/hash_files/data2.db";
+    char* pfilename = "data.db";
+    char* sfilename = "data2.db";
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
-    CALL_OR_DIE(SHT_Init());
-    
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
+
+    CALL_OR_DIE(SHT_Init());
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
 
     int indexDesc;
@@ -102,7 +100,6 @@ int main() {
       int tupleId;
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId));
-  		printf("TupleId=%d\n", tupleId);
 
       SecondaryRecord srecord;
       memcpy(srecord.index_key, record.surname, strlen(record.surname)+1);
@@ -112,13 +109,12 @@ int main() {
 
     }
     printf("\n");
-
-    // printf("\n- For all entries :\n");
+    
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
-    // printf("\n");
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
+
     BF_Close();
 
     return 0;
