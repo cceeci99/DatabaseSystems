@@ -7,7 +7,6 @@
 #include <fcntl.h>
 
 #include "bf.h"
-#include "ht.h"
 #include "hash_file.h"
 
 const char* names[] = {

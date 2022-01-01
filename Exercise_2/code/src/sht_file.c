@@ -5,8 +5,10 @@
 #include "bf.h"
 #include "sht_file.h"
 
+
 #define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) ) // max records per block for primary index
 #define SECONDARY_BLOCK_CAP (int) (BF_BLOCK_SIZE - 2*sizeof(int) / sizeof(SecondaryRecord))	// max records per block for secondary index
+
 
 #define CALL_BF(call)       \
 {                           \
@@ -16,6 +18,7 @@
     return HT_ERROR;        \
   }                         \
 }
+
 
 static char* hash_function(const char* index_key){
     static int no_buckets = 2 << (MAX_DEPTH - 1);
@@ -84,6 +87,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     memcpy(metadata, hash_id, HASH_ID_LEN * sizeof(char));
     metadata_size += HASH_ID_LEN*sizeof(char);
 
+    // store in metadata, information about index_key, if it's city or surname
     if (strcmp(attrName, "city") == 0){
         char index_key = 1;
         memcpy(metadata + metadata_size, &index_key, sizeof(char));
@@ -201,8 +205,8 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 		return HT_ERROR;
 	}
 
-    char index_key;
-    memcpy(&index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+    // char index_key;
+    // memcpy(&index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
     // if (index_key){
     //     printf("hash file uses city as key\n");
     // }
@@ -230,7 +234,6 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = sfileName;
-
             //
             open_files[i].index_type = 0;       // secondary index
 			*indexDesc = i;  // position in open_files array
@@ -373,12 +376,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 		return HT_ERROR;
 	}
 
-    printf("Searching record with index key city = %s\n", index_key);
-    // both  files primary and secondary index are open
-    // we have a key of record for example city= "Athens"
-    // secondary index is based on index_key of city
-    // find the record  of secondary index with index_key = "Athens"
-    // find the record of primary index from the tupleId
+    printf("Searching record with index key= %s\n", index_key);
 
     BF_Block* block;
     BF_Block_Init(&block);
