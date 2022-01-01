@@ -325,7 +325,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
 		
-		printf("Inserting record on hash block %d on data block %d on record pos %d\n", actual_hash_block_id, data_block_id, no_records);
+		printf(" on hash block %d on data block %d on record pos %d\n", actual_hash_block_id, data_block_id, no_records);
 		*tupleId = data_block_id*BLOCK_CAP+no_records;
 
 		// We changed the data block -> set dirty & unpin

@@ -98,7 +98,7 @@ int main() {
       memcpy(temp, record.surname, strlen(record.surname)+1);
 
       int tupleId;
-      printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s\n", record.id, record.name, record.surname, record.city);
+      printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId));
 
       SecondaryRecord srecord;
@@ -111,6 +111,7 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
+    CALL_OR_DIE(SHT_HashStatistics(sfilename));
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
