@@ -1,8 +1,6 @@
 #ifndef SHT_FILE_H
 #define SHT_FILE_H
 
-#include "ht.h"
-
 
 typedef struct{
 	char index_key[20];
