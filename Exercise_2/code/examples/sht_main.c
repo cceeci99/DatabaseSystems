@@ -111,7 +111,7 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
-    CALL_OR_DIE(SHT_HashStatistics(sfilename));
+    // CALL_OR_DIE(SHT_HashStatistics(sfilename));
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));

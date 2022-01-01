@@ -340,6 +340,9 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         BF_Block* data_block;
         BF_Block_Init(&data_block);
 
+        int current_id = 0;
+        int counter = 0;
+
         for (int i = 0; i < no_hash_blocks; i ++){
             CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, hash_block_ids[i], block));
             char* hash_data = BF_Block_GetData(block);
@@ -350,11 +353,21 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 int data_block_id;
                 memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
 
+                // To avoid printing same records because of buddies
+				if (current_id != data_block_id) {
+					current_id = data_block_id;
+				}
+				else {
+					continue;
+				}
+
                 CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, data_block_id, data_block));
                 char* data = BF_Block_GetData(data_block);
 
                 int no_records;
                 memcpy(&no_records, data + 1*sizeof(int), sizeof(int));
+
+                counter += no_records;
 
                 SecondaryRecord record;
                 size = 2*sizeof(int);
@@ -388,6 +401,9 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         }
 
         free(hash_block_ids);
+
+        printf("\nTotal number of records : %d\n", counter);
+        
 	    BF_Block_Destroy(&block);
 	    BF_Block_Destroy(&data_block);
 
@@ -409,7 +425,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         free(msb);
 
         int hash_block_index = bucket / HASH_CAP;
-        int hash_block_pos = bucket & HASH_CAP;
+        int hash_block_pos = bucket % HASH_CAP;
 
         BF_Block* block;
         BF_Block_Init(&block);
@@ -440,6 +456,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
         SecondaryRecord record;
         size = 2*sizeof(int);
+        int counter = 0;
         for (int k = 0; k < no_records ; k++){
             // search through secondary index record, those matching the index_key
             // and then get the corresponding record from the tupleId
@@ -464,10 +481,16 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 memcpy(&r, d + size + (record_pos-1)*sizeof(Record), sizeof(Record));
 
                 printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
-                
+                counter++;
+
                 CALL_BF(BF_UnpinBlock(b));
             }
         }
+
+        if (counter == 0){
+            printf("No records found with index_key=%s\n", index_key);
+        }
+        
         CALL_BF(BF_UnpinBlock(data_block));
         CALL_BF(BF_UnpinBlock(block));
 
@@ -551,8 +574,6 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 			int no_records;
 			memcpy(&no_records, data + 1 * sizeof(int), sizeof(int));
 
-            printf("data block %d has %d records\n", data_block_id, no_records);
-
 			// Update min & max no_records
 			if (no_records < min_no_records) {
 				min_no_records = no_records;
@@ -565,7 +586,6 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 			// Unpin data block
 			CALL_BF(BF_UnpinBlock(data_block));
 		}
-        printf("no_data_blocks=%d\n", no_data_blocks);
 		// Unpin hash block
 		CALL_BF(BF_UnpinBlock(block));
 
