@@ -29,6 +29,7 @@ typedef struct HF_Info {
 	int no_hash_blocks;
 	const char* filename;
 	int index_type; 	// 1 for primary 0 for secondary
+	int split;
 } HF_Info;
 
 // Global array

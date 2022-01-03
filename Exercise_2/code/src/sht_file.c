@@ -103,7 +103,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
 
     int limit = no_hash_blocks > 1 ? HASH_CAP : no_buckets;
 
-    for (int i=0; i<no_hash_blocks; i++){
+    for (int i=0; i<no_hash_blocks; i++) {
 
         // Allocate and initialize new hash block to 0
         CALL_BF(BF_AllocateBlock(fd, hash_block));
@@ -115,7 +115,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
         int hash_block_id = no_blocks - 1;
         memcpy(metadata + metadata_size + i*sizeof(int), &hash_block_id, sizeof(int));
 
-        for (int j=0; j<limit; j++){
+        for (int j=0; j<limit; j++) {
 
             // Allocate new data block and update its local depth and number of records
             CALL_BF(BF_AllocateBlock(fd, data_block));
@@ -230,7 +230,7 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 }
 
 HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
-    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES){
+    if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
         fprintf(stderr, "Error: index out of bounds\n");
         return HT_ERROR;
     }
@@ -238,7 +238,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     char* byte_string = hash_function(record.index_key);
 
     char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
-    for (int i = 0; i < open_files[indexDesc].depth; i++){
+    for (int i = 0; i < open_files[indexDesc].depth; i++) {
         msb[i] = byte_string[i];
     }
 
@@ -291,7 +291,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
     int created_new_blocks = 0;
 
-    if (no_records < SECONDARY_BLOCK_CAP){
+    if (no_records < SECONDARY_BLOCK_CAP) {
 
         size = 2*sizeof(int) + no_records*sizeof(SecondaryRecord);
         memcpy(data + size, &record, sizeof(SecondaryRecord));
@@ -303,6 +303,279 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
     }
+    	// Case 2.2: the data block has not enough space to store the given record
+	else {
+		// Case 2.2.1: local depth == global depth
+		if (local_depth == open_files[indexDesc].depth) {
+			// Save old depth and no_buckets
+			int old_depth = open_files[indexDesc].depth;
+			int old_no_buckets = open_files[indexDesc].no_buckets;
+
+			// Update depth and no_buckets
+			open_files[indexDesc].depth += 1;
+			open_files[indexDesc].no_buckets *= 2;
+
+			if (open_files[indexDesc].depth > 13) {
+				fprintf(stderr, "Error: maximum depth is %d", MAX_DEPTH);
+				return HT_ERROR;
+			}
+
+			// Case : we need more hash blocks
+			int current_cap = no_hash_blocks * HASH_CAP;
+			if (open_files[indexDesc].no_buckets > current_cap) {
+
+				created_new_blocks = 1;	// update flag
+
+				int no_new_hash_blocks_needed = (open_files[indexDesc].no_buckets - current_cap) / HASH_CAP;
+
+				for (int i = 0; i < no_new_hash_blocks_needed; i++) {
+
+					// Allocate new hash block and sets is content to 0
+					CALL_BF(BF_AllocateBlock(open_files[indexDesc].fd, block));
+					char* new_hash_block_data = BF_Block_GetData(block);
+					memset(new_hash_block_data, 0, BF_BLOCK_SIZE);
+
+					// We changed the new hash block -> set dirty & unpin
+					BF_Block_SetDirty(block);
+					CALL_BF(BF_UnpinBlock(block));
+
+					// Update the metadata block
+					int no_blocks;
+					CALL_BF(BF_GetBlockCounter(open_files[indexDesc].fd, &no_blocks));
+					int new_hash_block_id = no_blocks - 1;
+
+					CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
+					metadata = BF_Block_GetData(block);
+
+					int old_no_hash_blocks;
+					int sz = HASH_ID_LEN * sizeof(char) + 1 * sizeof(int);
+					memcpy(&old_no_hash_blocks, metadata + sz, sizeof(int));
+
+					sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int) + old_no_hash_blocks * sizeof(int);
+					memcpy(metadata + sz, &new_hash_block_id, sizeof(int));
+
+					int new_no_hash_blocks = old_no_hash_blocks + 1;
+					sz = HASH_ID_LEN * sizeof(char) + 1 * sizeof(int);
+					memcpy(metadata + sz, &new_no_hash_blocks, sizeof(int));
+
+					// We changed the metadata block -> set dirty & unpin
+					BF_Block_SetDirty(block);
+					CALL_BF(BF_UnpinBlock(block));
+
+				}
+
+				int old_no_hash_blocks = open_files[indexDesc].no_hash_blocks;
+
+				open_files[indexDesc].no_hash_blocks += no_new_hash_blocks_needed;
+				int new_no_hash_blocks = open_files[indexDesc].no_hash_blocks;
+
+				CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
+				metadata = BF_Block_GetData(block);
+				
+				// Save the ids of the the hash blocks
+				int* hash_block_ids = malloc(new_no_hash_blocks * sizeof(int));
+				
+				int sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int);
+				for (int i = 0; i < new_no_hash_blocks; i++) {
+					memcpy(&hash_block_ids[i], metadata + sz + i * sizeof(int), sizeof(int));
+				}
+
+				// Unpin metadata block
+				CALL_BF(BF_UnpinBlock(block));
+
+				int temp;
+
+				// Save the ids of the data blocks
+				int* data_block_ids = malloc(old_no_buckets * sizeof(int));
+
+				for (int i = 0; i < old_no_hash_blocks; i++) {
+
+					CALL_BF(BF_GetBlock(open_files[indexDesc].fd, hash_block_ids[i], block));
+					hash_data = BF_Block_GetData(block);
+
+					for (int j = 0; j < HASH_CAP; j++) {
+						temp = j + i * HASH_CAP;
+						memcpy(&data_block_ids[temp], hash_data + j * sizeof(int), sizeof(int));
+					}
+
+					// Unpin hash block
+					CALL_BF(BF_UnpinBlock(block));
+				}
+
+				// Update the buckets of each hash block to point to the appropriate data block id
+				for (int i = 0; i < new_no_hash_blocks; i++) {
+
+					CALL_BF(BF_GetBlock(open_files[indexDesc].fd, hash_block_ids[i], block));
+					hash_data = BF_Block_GetData(block);
+
+					for (int j = 0; j < HASH_CAP; j+=2) {
+						temp = j + i * HASH_CAP;
+						memcpy(hash_data + j * sizeof(int), &data_block_ids[temp / 2], sizeof(int));
+						memcpy(hash_data + (j + 1) * sizeof(int), &data_block_ids[temp / 2], sizeof(int));
+					}
+
+					// We changed the hash block -> set dirty & unpin
+					BF_Block_SetDirty(block);
+					CALL_BF(BF_UnpinBlock(block));
+				}
+
+				free(hash_block_ids);
+				free(data_block_ids);
+			}
+			// We don't need new hash block so we just modify the current one
+			else {
+
+				CALL_BF(BF_GetBlock(open_files[indexDesc].fd, actual_hash_block_id, block));
+				hash_data = BF_Block_GetData(block);
+				
+				int* data_block_ids = malloc(old_no_buckets * sizeof(int));
+				for (int i = 0; i < old_no_buckets; i++) {
+					memcpy(&data_block_ids[i], hash_data + i * sizeof(int), sizeof(int));
+				}
+
+				for (int i = 0; i < open_files[indexDesc].no_buckets; i+=2) {
+					memcpy(hash_data + i * sizeof(int), &data_block_ids[i / 2], sizeof(int));
+					memcpy(hash_data + (i + 1) * sizeof(int), &data_block_ids[i / 2], sizeof(int));
+				}
+
+				free(data_block_ids);
+
+				// We changed the hash block -> set dirty & unpin
+				BF_Block_SetDirty(block);
+				CALL_BF(BF_UnpinBlock(block));
+			}
+
+			// Update depth in metadata block
+			CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
+			metadata = BF_Block_GetData(block);				
+			memcpy(metadata + HASH_ID_LEN * sizeof(char), &open_files[indexDesc].depth, sizeof(int));
+
+			// We changed metadata block -> set dirty & unpin
+			BF_Block_SetDirty(block);
+			CALL_BF(BF_UnpinBlock(block));
+		}
+
+		// If we created new hash blocks we need to rehash the record.id to find in which hash block its data block id is stored
+		if (created_new_blocks == 1) {
+
+			// Get the hashed value of the id
+			char* new_byte_string = hash_function(record.index_key);
+			
+			// Get depth MSB of hashed value
+			char* new_msb = malloc((open_files[indexDesc].depth + 1) * sizeof(char));
+			for (int i = 0; i < open_files[indexDesc].depth; i++) {
+				new_msb[i] = byte_string[i];
+			}
+			new_msb[open_files[indexDesc].depth] = '\0';
+
+			// Get the bucket based on the MSB
+			char* new_tmp;
+			bucket = strtol(new_msb, &new_tmp, 2);
+			free(new_msb);
+
+			hash_block_index = bucket / HASH_CAP;  // in which hash block is the bucket
+			hash_block_pos = bucket % HASH_CAP;    // which is the position of the bucket in that hash block
+
+			CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
+			metadata = BF_Block_GetData(block);
+
+			int sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int);
+			memcpy(&actual_hash_block_id, metadata + sz + hash_block_index * sizeof(int), sizeof(int));
+
+			// Unpin metadata block
+			CALL_BF(BF_UnpinBlock(block));
+		}
+
+		// Case : local depth < global depth
+
+		CALL_BF(BF_GetBlock(open_files[indexDesc].fd, actual_hash_block_id, block));
+		hash_data = BF_Block_GetData(block);
+
+		BF_Block* new_data_block;
+		BF_Block_Init(&new_data_block);
+		CALL_BF(BF_AllocateBlock(open_files[indexDesc].fd, new_data_block));
+
+		int new_no_blocks;
+		CALL_BF(BF_GetBlockCounter(open_files[indexDesc].fd, &new_no_blocks));
+		int new_data_block_id = new_no_blocks - 1;
+		int old_data_block_id = data_block_id;
+
+		char* new_data_block_data = BF_Block_GetData(new_data_block);
+		char* old_data_block_data = data;
+
+		// Update local depths (d' = d' + 1)
+		int new_local_depth = local_depth + 1;
+		memcpy(old_data_block_data, &new_local_depth, sizeof(int));
+		memcpy(new_data_block_data, &new_local_depth, sizeof(int));
+
+		// Set the two data blocks no_records to 0
+		int refresh_no_records = 0;
+		memcpy(old_data_block_data + 1 * sizeof(int), &refresh_no_records, sizeof(int));
+		memcpy(new_data_block_data + 1 * sizeof(int), &refresh_no_records, sizeof(int));
+
+		// Find the buddies which point to the same data block where record.id was supposed to get stored
+		int db_id, first_bucket;
+		int set_first_bucket = 0, no_buddies = 0, flag = 0;
+		for (int i = 0; i < open_files[indexDesc].no_buckets; i++) {
+			memcpy(&db_id, hash_data + i * sizeof(int), sizeof(int));
+			if (db_id == old_data_block_id) {
+				no_buddies++;
+				flag = 1;
+				if (set_first_bucket == 0) {
+					first_bucket = i;
+					set_first_bucket = 1;
+				}
+			}
+			if (db_id != old_data_block_id && flag == 1) {	// no need to search anymore - we have found all the buddies
+				break;
+			}
+		}
+
+		// Update buckets so first half point to the old data block and second half to the new data block
+		for (int i = 0; i < no_buddies / 2; i++) {
+			memcpy(hash_data + (first_bucket + i) * sizeof(int), &old_data_block_id, sizeof(int));
+		}
+
+		for (int i = no_buddies / 2; i < no_buddies; i++) {
+			memcpy(hash_data + (first_bucket + i) * sizeof(int), &new_data_block_id, sizeof(int));
+		}
+
+		// Save the records that were stored in the old data block
+		SecondaryRecord* records = malloc((no_records + 1) * sizeof(SecondaryRecord));
+		for (int i = 0; i < no_records; i++) {
+			int sz = 2 * sizeof(int) + i * sizeof(SecondaryRecord);
+			memcpy(&records[i], old_data_block_data + sz, sizeof(SecondaryRecord));
+		}
+		records[no_records] = record; // new record to be inserted
+
+		// Reinitialize all records to 0
+		memset(old_data_block_data + 2 * sizeof(int), 0, BF_BLOCK_SIZE - 2 * sizeof(int));
+		memset(new_data_block_data + 2 * sizeof(int), 0, BF_BLOCK_SIZE - 2 * sizeof(int));
+
+		// Cleanup before we re-insert each record
+		BF_Block_SetDirty(block);
+		CALL_BF(BF_UnpinBlock(block));
+		BF_Block_Destroy(&block);
+
+		BF_Block_SetDirty(data_block);
+		CALL_BF(BF_UnpinBlock(data_block));
+		BF_Block_Destroy(&data_block);
+		
+		BF_Block_SetDirty(new_data_block);
+		CALL_BF(BF_UnpinBlock(new_data_block));
+		BF_Block_Destroy(&new_data_block);
+
+		// Insert again all records
+		for (int i = 0; i < no_records + 1; i++) {
+			int tuple;
+			if (SHT_SecondaryInsertEntry(indexDesc, records[i]) == HT_ERROR) {
+				return HT_ERROR;
+			}
+			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
+		}
+		free(records);
+
+	}
 
     return HT_OK;
 }
@@ -331,7 +604,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
         size_t size = HASH_ID_LEN*sizeof(char) + 2*sizeof(int);
 
-        for (int i = 0; i < no_hash_blocks; i++){
+        for (int i = 0; i < no_hash_blocks; i++) {
             memcpy(&hash_block_ids[i], metadata + size + i*sizeof(int), sizeof(int));
         }
 
@@ -343,13 +616,13 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         int current_id = 0;
         int counter = 0;
 
-        for (int i = 0; i < no_hash_blocks; i ++){
+        for (int i = 0; i < no_hash_blocks; i ++) {
             CALL_BF(BF_GetBlock(open_files[sindexDesc].fd, hash_block_ids[i], block));
             char* hash_data = BF_Block_GetData(block);
 
             int limit = no_hash_blocks == 1 ? open_files[sindexDesc].no_buckets : HASH_CAP;
 
-            for (int j = 0; j < limit; j++){
+            for (int j = 0; j < limit; j++) {
                 int data_block_id;
                 memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
 
@@ -372,7 +645,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 SecondaryRecord record;
                 size = 2*sizeof(int);
 
-                for (int k = 0; k < no_records; k++){
+                for (int k = 0; k < no_records; k++) {
                     memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
                     printf("Record {index_key=%s, tupleId=%d}\n", record.index_key, record.tupleId);
@@ -414,7 +687,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         char* byte_string = hash_function(index_key);
 
         char* msb = malloc((open_files[sindexDesc].depth + 1)*sizeof(char));
-        for (int i = 0; i < open_files[sindexDesc].depth; i++){
+        for (int i = 0; i < open_files[sindexDesc].depth; i++) {
             msb[i] = byte_string[i];
         }
 
@@ -457,13 +730,13 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         SecondaryRecord record;
         size = 2*sizeof(int);
         int counter = 0;
-        for (int k = 0; k < no_records ; k++){
+        for (int k = 0; k < no_records ; k++) {
             // search through secondary index record, those matching the index_key
             // and then get the corresponding record from the tupleId
             
             memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
             
-            if (strcmp(index_key, record.index_key) == 0){
+            if (strcmp(index_key, record.index_key) == 0) {
                 printf("Index_key=%s, TupleId = %d\n", record.index_key, record.tupleId);
 
                 BF_Block* b;
@@ -487,7 +760,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
             }
         }
 
-        if (counter == 0){
+        if (counter == 0) {
             printf("No records found with index_key=%s\n", index_key);
         }
         

@@ -250,7 +250,7 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	return HT_OK;
 }
 
-HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
+HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRecordArray *updateArray, int* updateArraySize) {
 	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
@@ -325,8 +325,8 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
 		
-		printf(" on hash block %d on data block %d on record pos %d\n", actual_hash_block_id, data_block_id, no_records);
-		*tupleId = data_block_id*BLOCK_CAP+no_records;
+		printf("\nInserting record with id = %d on hash block %d on data block %d on record pos %d\n", record.id, actual_hash_block_id, data_block_id, no_records);
+		*tupleId = data_block_id*BLOCK_CAP + no_records;
 
 		// We changed the data block -> set dirty & unpin
 		BF_Block_SetDirty(data_block);
@@ -334,8 +334,10 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 	}
 	// Case 2.2: the data block has not enough space to store the given record
 	else {
+		printf("Case 2.2\n");
 		// Case 2.2.1: local depth == global depth
 		if (local_depth == open_files[indexDesc].depth) {
+			printf("Case local=global\n");
 			// Save old depth and no_buckets
 			int old_depth = open_files[indexDesc].depth;
 			int old_no_buckets = open_files[indexDesc].no_buckets;
@@ -352,6 +354,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 			// Case : we need more hash blocks
 			int current_cap = no_hash_blocks * HASH_CAP;
 			if (open_files[indexDesc].no_buckets > current_cap) {
+				printf("Case need more hash blocks\n");
 
 				created_new_blocks = 1;	// update flag
 
@@ -453,7 +456,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 			}
 			// We don't need new hash block so we just modify the current one
 			else {
-
+				printf("Case we dont need more hash blocks\n");
 				CALL_BF(BF_GetBlock(open_files[indexDesc].fd, actual_hash_block_id, block));
 				hash_data = BF_Block_GetData(block);
 				
@@ -528,7 +531,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		CALL_BF(BF_GetBlockCounter(open_files[indexDesc].fd, &new_no_blocks));
 		int new_data_block_id = new_no_blocks - 1;
 		int old_data_block_id = data_block_id;
-
+		
 		char* new_data_block_data = BF_Block_GetData(new_data_block);
 		char* old_data_block_data = data;
 
@@ -536,6 +539,11 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		int new_local_depth = local_depth + 1;
 		memcpy(old_data_block_data, &new_local_depth, sizeof(int));
 		memcpy(new_data_block_data, &new_local_depth, sizeof(int));
+
+		// keep old no_records for the buckets that got splitted
+		int old_no_records;
+		memcpy(&old_no_records, old_data_block_data+1*sizeof(int), sizeof(int));
+
 
 		// Set the two data blocks no_records to 0
 		int refresh_no_records = 0;
@@ -569,11 +577,28 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 			memcpy(hash_data + (first_bucket + i) * sizeof(int), &new_data_block_id, sizeof(int));
 		}
 
+		int* old_tuple_ids = malloc(no_records*sizeof(int));
+
 		// Save the records that were stored in the old data block
 		Record* records = malloc((no_records + 1) * sizeof(Record));
 		for (int i = 0; i < no_records; i++) {
 			sz = 2 * sizeof(int) + i * sizeof(Record);
 			memcpy(&records[i], old_data_block_data + sz, sizeof(Record));
+			printf("record with id = %d changed after split\n", records[i].id);
+
+			Record rr;
+			sz = 2 * sizeof(int);
+			int record_pos;
+			for (int k = 0; k < old_no_records; k++) {
+				memcpy(&rr, old_data_block_data + sz + k * sizeof(Record), sizeof(Record));
+				if (records[i].id == rr.id){
+					// printf("record pos=%d\n", k+1);
+					 record_pos = k+1;
+				}
+			}
+
+			old_tuple_ids[i] = BLOCK_CAP*old_data_block_id + record_pos ;
+			// printf("record with id=%d and old tuple id=%d\n", records[i].id, old_tuple_ids[i]);
 		}
 		records[no_records] = record; // new record to be inserted
 
@@ -594,15 +619,35 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId) {
 		CALL_BF(BF_UnpinBlock(new_data_block));
 		BF_Block_Destroy(&new_data_block);
 
+		updateArray = malloc((no_records)*sizeof(Record));
+		*updateArraySize = no_records;
+
+		open_files[indexDesc].split = 1;
+
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
 			int tuple;
-			if (HT_InsertEntry(indexDesc, records[i], &tuple) == HT_ERROR) {
+			UpdateRecordArray ra;
+			if (HT_InsertEntry(indexDesc, records[i], &tuple, &ra, updateArraySize) == HT_ERROR) {
 				return HT_ERROR;
 			}
+			// printf("record with id=%d and newTupleId=%d\n", records[i].id, tuple);
+			
+			if (i < no_records){
+				// memcpy(&updateArray[i].city, records[i].city, strlen(records[i].city)+1);
+				// memcpy(&updateArray[i].surname, records[i].surname, strlen(records[i].surname)+1);
+				
+				memcpy(&updateArray[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
+				memcpy(&updateArray[i].newTupleId, &tuple, sizeof(int));
+
+				printf("record with id=%d, oldTupleId=%d, newTupleId=%d\n", records[i].id, updateArray[i].oldTupleId, updateArray[i].newTupleId);
+			} 
+			
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
+		free(old_tuple_ids);
 		free(records);
+
 
 	}
 

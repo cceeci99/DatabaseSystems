@@ -69,7 +69,7 @@ int main() {
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
 
     CALL_OR_DIE(SHT_Init());
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
 
     int indexDesc;
     int sindexDesc;
@@ -85,9 +85,12 @@ int main() {
       printf("-");
     }
     printf("\n");
+
+  
+      UpdateRecordArray* update;
     
     char temp[30];
-    for (int id = 0; id < 4; ++id) {
+    for (int id = 0; id < 23; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
@@ -95,14 +98,22 @@ int main() {
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
       r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
-      memcpy(temp, record.surname, strlen(record.surname)+1);
+      memcpy(temp, record.city, strlen(record.city)+1);
 
+      int updateArraySize;
       int tupleId;
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
-      CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId));
+      CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &update, &updateArraySize));
 
+      if ( open_files[indexDesc].split == 1) {
+          for (int j=0; j<updateArraySize; j++){
+              printf("old_tuple_id=%d, new_tuple_id=%d\n", update[j].oldTupleId, update[j].newTupleId);
+          }
+      }
+
+      
       SecondaryRecord srecord;
-      memcpy(srecord.index_key, record.surname, strlen(record.surname)+1);
+      memcpy(srecord.index_key, record.city, strlen(record.city)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
@@ -111,7 +122,6 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
-    // CALL_OR_DIE(SHT_HashStatistics(sfilename));
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));

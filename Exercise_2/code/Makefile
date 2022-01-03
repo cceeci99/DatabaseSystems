@@ -16,6 +16,9 @@ all:
 run:
 	./build/runner files/hash_files/data.db 1000 2
 
+db:
+	gdb ./build/runner files/hash_files/data.db 1000 2
+
 debug:
 	gdb ./build/runner files/hash_files/data.db 1000 2
 
