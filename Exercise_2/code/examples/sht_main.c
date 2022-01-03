@@ -86,9 +86,8 @@ int main() {
     }
     printf("\n");
 
-  
-      UpdateRecordArray* update;
-    
+    UpdateRecordArray* updateArray;
+
     char temp[30];
     for (int id = 0; id < 23; ++id) {
       record.id = id;
@@ -102,26 +101,27 @@ int main() {
 
       int updateArraySize;
       int tupleId;
-      printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
-      CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &update, &updateArraySize));
 
+      printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
+      CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
+      
       if ( open_files[indexDesc].split == 1) {
           for (int j=0; j<updateArraySize; j++){
-              printf("old_tuple_id=%d, new_tuple_id=%d\n", update[j].oldTupleId, update[j].newTupleId);
+              printf("old_tuple_id=%d, new_tuple_id=%d\n", updateArray[j].oldTupleId, updateArray[j].newTupleId);
           }
+          free(updateArray);
       }
 
-      
       SecondaryRecord srecord;
       memcpy(srecord.index_key, record.city, strlen(record.city)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
-      CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
+      // CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
 
     }
     printf("\n");
     
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
+    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));

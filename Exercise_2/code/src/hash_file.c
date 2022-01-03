@@ -54,6 +54,7 @@ HT_ErrorCode HT_Init() {
 		open_files[i].filename = NULL;
 		//
 		open_files[i].index_type = -1;
+		open_files[i].split = -1;
 	}
  	return HT_OK;
 }
@@ -211,6 +212,7 @@ HT_ErrorCode HT_OpenIndex(const char *filename, int *indexDesc) {
 			open_files[i].filename = filename;
 			//
 			open_files[i].index_type = 1;
+			open_files[i].split = 0;
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -246,11 +248,12 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
 	//
+	open_files[indexDesc].split = -1;
 	open_files[indexDesc].index_type = -1;
 	return HT_OK;
 }
 
-HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRecordArray *updateArray, int* updateArraySize) {
+HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRecordArray** updateArray, int* updateArraySize) {
 	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
@@ -619,7 +622,9 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		CALL_BF(BF_UnpinBlock(new_data_block));
 		BF_Block_Destroy(&new_data_block);
 
-		updateArray = malloc((no_records)*sizeof(Record));
+		UpdateRecordArray* temp = malloc((no_records)*sizeof(UpdateRecordArray));
+
+		*updateArray = malloc((no_records)*sizeof(UpdateRecordArray));
 		*updateArraySize = no_records;
 
 		open_files[indexDesc].split = 1;
@@ -627,8 +632,8 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
 			int tuple;
-			UpdateRecordArray ra;
-			if (HT_InsertEntry(indexDesc, records[i], &tuple, &ra, updateArraySize) == HT_ERROR) {
+			// UpdateRecordArray ra;
+			if (HT_InsertEntry(indexDesc, records[i], &tuple, updateArray, updateArraySize) == HT_ERROR) {
 				return HT_ERROR;
 			}
 			// printf("record with id=%d and newTupleId=%d\n", records[i].id, tuple);
@@ -636,19 +641,22 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			if (i < no_records){
 				// memcpy(&updateArray[i].city, records[i].city, strlen(records[i].city)+1);
 				// memcpy(&updateArray[i].surname, records[i].surname, strlen(records[i].surname)+1);
-				
-				memcpy(&updateArray[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
-				memcpy(&updateArray[i].newTupleId, &tuple, sizeof(int));
+				temp[i].oldTupleId = old_tuple_ids[i];
+				temp[i].newTupleId = tuple;
+				// memcpy(&updateArray[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
+				// memcpy(&updateArray[i].newTupleId, &tuple, sizeof(int));
 
-				printf("record with id=%d, oldTupleId=%d, newTupleId=%d\n", records[i].id, updateArray[i].oldTupleId, updateArray[i].newTupleId);
+				printf("record with id=%d, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].oldTupleId, temp[i].newTupleId);
 			} 
 			
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
+		*updateArray = temp;
+		
 		free(old_tuple_ids);
 		free(records);
 
-
+		
 	}
 
 	// One more successfull insertion :)
