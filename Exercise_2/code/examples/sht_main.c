@@ -109,6 +109,9 @@ int main() {
           for (int j=0; j<updateArraySize; j++){
               printf("old_tuple_id=%d, new_tuple_id=%d\n", updateArray[j].oldTupleId, updateArray[j].newTupleId);
           }
+          // update()
+
+          open_files[indexDesc].split = 0;
           free(updateArray);
       }
 

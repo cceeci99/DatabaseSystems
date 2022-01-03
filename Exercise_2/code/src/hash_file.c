@@ -652,7 +652,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
 		*updateArray = temp;
-		
+
 		free(old_tuple_ids);
 		free(records);
 
