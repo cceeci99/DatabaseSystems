@@ -107,7 +107,7 @@ int main() {
       
       if ( open_files[indexDesc].split == 1) {
           for (int j=0; j<updateArraySize; j++){
-              printf("old_tuple_id=%d, new_tuple_id=%d\n", updateArray[j].oldTupleId, updateArray[j].newTupleId);
+              printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[j].city, updateArray[j].oldTupleId, updateArray[j].newTupleId);
           }
           // update()
 

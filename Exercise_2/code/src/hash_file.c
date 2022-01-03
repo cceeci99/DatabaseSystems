@@ -639,12 +639,10 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			// printf("record with id=%d and newTupleId=%d\n", records[i].id, tuple);
 			
 			if (i < no_records){
-				// memcpy(&updateArray[i].city, records[i].city, strlen(records[i].city)+1);
-				// memcpy(&updateArray[i].surname, records[i].surname, strlen(records[i].surname)+1);
-				temp[i].oldTupleId = old_tuple_ids[i];
-				temp[i].newTupleId = tuple;
-				// memcpy(&updateArray[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
-				// memcpy(&updateArray[i].newTupleId, &tuple, sizeof(int));
+				memcpy(&temp[i].city, records[i].city, strlen(records[i].city)+1);
+				memcpy(&temp[i].surname, records[i].surname, strlen(records[i].surname)+1);
+				memcpy(&temp[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
+				memcpy(&temp[i].newTupleId, &tuple, sizeof(int));
 
 				printf("record with id=%d, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].oldTupleId, temp[i].newTupleId);
 			} 
@@ -655,8 +653,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 
 		free(old_tuple_ids);
 		free(records);
-
-		
 	}
 
 	// One more successfull insertion :)
