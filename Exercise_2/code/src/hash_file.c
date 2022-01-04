@@ -328,7 +328,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
 		
-		printf("\nInserting record with id = %d on hash block %d on data block %d on record pos %d\n", record.id, actual_hash_block_id, data_block_id, no_records);
+		printf("\n Inserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
 		*tupleId = data_block_id*BLOCK_CAP + no_records;
 
 		// We changed the data block -> set dirty & unpin
@@ -584,7 +584,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		for (int i = 0; i < no_records; i++) {
 			sz = 2 * sizeof(int) + i * sizeof(Record);
 			memcpy(&records[i], old_data_block_data + sz, sizeof(Record));
-			printf("record with id = %d changed after split\n", records[i].id);
 
 			Record rr;
 			sz = 2 * sizeof(int);
@@ -592,13 +591,11 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			for (int k = 0; k < old_no_records; k++) {
 				memcpy(&rr, old_data_block_data + sz + k * sizeof(Record), sizeof(Record));
 				if (records[i].id == rr.id){
-					// printf("record pos=%d\n", k+1);
 					 record_pos = k+1;
 				}
 			}
 
-			old_tuple_ids[i] = BLOCK_CAP*old_data_block_id + record_pos ;
-			// printf("record with id=%d and old tuple id=%d\n", records[i].id, old_tuple_ids[i]);
+			old_tuple_ids[i] = BLOCK_CAP*old_data_block_id + record_pos;
 		}
 		records[no_records] = record; // new record to be inserted
 
@@ -633,17 +630,20 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			if (HT_InsertEntry(indexDesc, records[i], &tuple, updateArray, updateArraySize) == HT_ERROR) {
 				return HT_ERROR;
 			}
-			*tupleId = tuple;
-			// printf("record with id=%d and newTupleId=%d\n", records[i].id, tuple);
-			
+		
 			if (i < no_records){
 				memcpy(&temp[i].city, records[i].city, strlen(records[i].city)+1);
 				memcpy(&temp[i].surname, records[i].surname, strlen(records[i].surname)+1);
-				memcpy(&temp[i].oldTupleId, &old_tuple_ids[i], sizeof(int));				
+				memcpy(&temp[i].oldTupleId, &old_tuple_ids[i], sizeof(int));		
 				memcpy(&temp[i].newTupleId, &tuple, sizeof(int));
 
-				printf("record with id=%d, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].oldTupleId, temp[i].newTupleId);
-			} 
+				printf("record with id=%d, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
+			}
+			else{
+				// return the new tuple Id for the secondary record
+				*tupleId = tuple;
+
+			}
 			
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}

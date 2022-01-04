@@ -129,8 +129,8 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
             int local_depth = depth;
             memcpy(data, &local_depth, sizeof(int));
 
-            int no_entries;
-            memcpy(data + 1*sizeof(int), &no_entries, sizeof(int));
+            int no_records;
+            memcpy(data + 1*sizeof(int), &no_records, sizeof(int));
             memset(data + 2*sizeof(int), 0, BF_BLOCK_SIZE - 2*sizeof(int));
             
             BF_Block_SetDirty(data_block);
@@ -298,7 +298,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
         no_records++;
         memcpy(data + 1*sizeof(int), &no_records, sizeof(int));
-        printf("Inserting secondary index record{%s , %d} on hash block %d, data block %d, record pos %d\n", record.index_key, record.tupleId, actual_hash_block_id, data_block_id, no_records);
+        printf("Inserting secondary index record{%s , %d} on data block %d, record pos %d\n", record.index_key, record.tupleId, data_block_id, no_records);
 
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
@@ -567,7 +567,6 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
-			int tuple;
 			if (SHT_SecondaryInsertEntry(indexDesc, records[i]) == HT_ERROR) {
 				return HT_ERROR;
 			}
@@ -644,24 +643,21 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 			
 			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
-			if (strcmp(updateArray[i].city, record.index_key) == 0 && (updateArray[i].oldTupleId == record.tupleId) ) {
+			if ( (strcmp(updateArray[i].city, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
-			// 	// printf("Record with city=%s, oldTupleId=%d, newTupleId=%d\n", updateArray[i].city, record.tupleId, updateArray[i].newTupleId);
-
 				if (record.tupleId != updateArray[i].newTupleId) {
-					printf("Update tupleId of record\n");
-					memcpy(&record.tupleId, &updateArray[i].newTupleId, sizeof(int));
+					record.tupleId = updateArray[i].newTupleId;
+					printf("Update secondary record tupleId=%d\n", record.tupleId);
 
-					printf("New secondary record tupleId=%d\n", record.tupleId);
 					BF_Block_SetDirty(data_block);
+					CALL_BF(BF_UnpinBlock(data_block));
 				}
 				else {
 					printf("Record hasn't changed tupleId\n");
 				}
 			}		
 		}
-		CALL_BF(BF_UnpinBlock(data_block));
 		CALL_BF(BF_UnpinBlock(block));
 
 		BF_Block_Destroy(&block);
@@ -752,7 +748,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                     memcpy(&r, d + 2*sizeof(int) + (record_pos-1)*sizeof(Record), sizeof(Record));
 
                     printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
-                    
+                    printf("\n");	
                     CALL_BF(BF_UnpinBlock(b));
                 }
                 CALL_BF(BF_UnpinBlock(data_block));
@@ -842,7 +838,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
                 printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
                 counter++;
-
+				printf("\n");	
                 CALL_BF(BF_UnpinBlock(b));
             }
         }
