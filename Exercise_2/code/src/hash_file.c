@@ -337,10 +337,9 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 	}
 	// Case 2.2: the data block has not enough space to store the given record
 	else {
-		printf("Case 2.2\n");
 		// Case 2.2.1: local depth == global depth
 		if (local_depth == open_files[indexDesc].depth) {
-			printf("Case local=global\n");
+
 			// Save old depth and no_buckets
 			int old_depth = open_files[indexDesc].depth;
 			int old_no_buckets = open_files[indexDesc].no_buckets;
@@ -357,7 +356,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			// Case : we need more hash blocks
 			int current_cap = no_hash_blocks * HASH_CAP;
 			if (open_files[indexDesc].no_buckets > current_cap) {
-				printf("Case need more hash blocks\n");
 
 				created_new_blocks = 1;	// update flag
 
@@ -459,7 +457,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			}
 			// We don't need new hash block so we just modify the current one
 			else {
-				printf("Case we dont need more hash blocks\n");
 				CALL_BF(BF_GetBlock(open_files[indexDesc].fd, actual_hash_block_id, block));
 				hash_data = BF_Block_GetData(block);
 				
@@ -636,6 +633,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			if (HT_InsertEntry(indexDesc, records[i], &tuple, updateArray, updateArraySize) == HT_ERROR) {
 				return HT_ERROR;
 			}
+			*tupleId = tuple;
 			// printf("record with id=%d and newTupleId=%d\n", records[i].id, tuple);
 			
 			if (i < no_records){

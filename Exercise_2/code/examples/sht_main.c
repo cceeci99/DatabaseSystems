@@ -106,10 +106,10 @@ int main() {
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
       
       if ( open_files[indexDesc].split == 1) {
-          for (int j=0; j<updateArraySize; j++){
-              printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[j].city, updateArray[j].oldTupleId, updateArray[j].newTupleId);
-          }
-          // update()
+          // update()...
+          printf("Calling update secondary index\n");
+          SHT_SecondaryUpdateEntry(sindexDesc, updateArray, updateArraySize);
+
 
           open_files[indexDesc].split = 0;
           free(updateArray);
@@ -119,12 +119,12 @@ int main() {
       memcpy(srecord.index_key, record.city, strlen(record.city)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
-      // CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
+      CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
 
     }
     printf("\n");
     
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));

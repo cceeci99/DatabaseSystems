@@ -40,7 +40,8 @@ SecondaryRecord record /* δομή που προσδιορίζει την εγγ
 
 HT_ErrorCode SHT_SecondaryUpdateEntry (
 int indexDesc, /* θέση στον πίνακα με τα ανοιχτά αρχεία */
-UpdateRecordArray *updateArray /* δομή που προσδιορίζει την παλιά εγγραφή */);
+UpdateRecordArray *updateArray, /* δομή που προσδιορίζει την παλιά εγγραφή */
+int updateArraySize /* το μέγεθος του πίνακα για την παλια εγγραφή */);
 
 HT_ErrorCode SHT_PrintAllEntries(
 int sindexDesc, /* θέση στον πίνακα με τα ανοιχτά αρχεία  του αρχείου δευτερεύοντος ευρετηρίου */

@@ -580,7 +580,94 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     return HT_OK;
 }
 
-HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateArray) {
+HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateArray, int updateArraySize) {
+	// for each record that hash changed find it in the secondary index hash file and update it's tupleId
+
+ 	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
+        fprintf(stderr, "Error: index out of bounds\n");
+        return HT_ERROR;
+    }
+
+
+	for (int i = 0; i < updateArraySize; i++){
+    
+		printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);
+		
+
+        char* byte_string = hash_function(updateArray[i].city);
+
+        char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
+        for (int i = 0; i < open_files[indexDesc].depth; i++) {
+            msb[i] = byte_string[i];
+        }
+
+        msb[open_files[indexDesc].depth] = '\0';
+        
+        char* tmp;
+        int bucket = strtol(msb, &tmp, 2);
+        free(msb);
+
+        int hash_block_index = bucket / HASH_CAP;
+        int hash_block_pos = bucket % HASH_CAP;
+
+        BF_Block* block;
+        BF_Block_Init(&block);
+
+        CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
+        char* metadata = BF_Block_GetData(block);
+
+        int actual_hash_block_id;
+        size_t size = HASH_ID_LEN*sizeof(char) + 2*sizeof(int);
+        memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+
+        CALL_BF(BF_UnpinBlock(block));
+
+        CALL_BF(BF_GetBlock(open_files[indexDesc].fd, actual_hash_block_id, block));
+        char* hash_data = BF_Block_GetData(block);
+
+        int data_block_id;
+        memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+
+        BF_Block* data_block;
+        BF_Block_Init(&data_block);
+
+        CALL_BF(BF_GetBlock(open_files[indexDesc].fd, data_block_id, data_block));
+        char* data = BF_Block_GetData(data_block);
+
+        int no_records;
+        memcpy(&no_records, data + 1*sizeof(int), sizeof(int));
+
+        SecondaryRecord record;
+        size = 2*sizeof(int);
+		
+		for (int j = 0; j < no_records; j++){
+			
+			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
+			if (strcmp(updateArray[i].city, record.index_key) == 0 && (updateArray[i].oldTupleId == record.tupleId) ) {
+				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
+
+			// 	// printf("Record with city=%s, oldTupleId=%d, newTupleId=%d\n", updateArray[i].city, record.tupleId, updateArray[i].newTupleId);
+
+				if (record.tupleId != updateArray[i].newTupleId) {
+					printf("Update tupleId of record\n");
+					memcpy(&record.tupleId, &updateArray[i].newTupleId, sizeof(int));
+
+					printf("New secondary record tupleId=%d\n", record.tupleId);
+					BF_Block_SetDirty(data_block);
+				}
+				else {
+					printf("Record hasn't changed tupleId\n");
+				}
+			}		
+		}
+		CALL_BF(BF_UnpinBlock(data_block));
+		CALL_BF(BF_UnpinBlock(block));
+
+		BF_Block_Destroy(&block);
+	    BF_Block_Destroy(&data_block);
+    }	
+
     return HT_OK;
 }
 
