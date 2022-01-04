@@ -298,7 +298,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
         no_records++;
         memcpy(data + 1*sizeof(int), &no_records, sizeof(int));
-        printf("Inserting secondary index record{%s , %d} on data block %d, record pos %d\n", record.index_key, record.tupleId, data_block_id, no_records);
+        printf("Inserting secondary index record{%s , %d}\n", record.index_key, record.tupleId);
 
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
@@ -647,17 +647,23 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
+					// update the record's tupleId
 					record.tupleId = updateArray[i].newTupleId;
+					// write it back to the data_block
+					memcpy(data+size+j*sizeof(SecondaryRecord), &record, sizeof(SecondaryRecord));
+					
 					printf("Update secondary record tupleId=%d\n", record.tupleId);
 
 					BF_Block_SetDirty(data_block);
-					CALL_BF(BF_UnpinBlock(data_block));
+					break;
 				}
 				else {
 					printf("Record hasn't changed tupleId\n");
 				}
 			}		
 		}
+		CALL_BF(BF_UnpinBlock(data_block));
+
 		CALL_BF(BF_UnpinBlock(block));
 
 		BF_Block_Destroy(&block);
@@ -745,7 +751,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                     char* d = BF_Block_GetData(b);
 
                     Record r;
-                    memcpy(&r, d + 2*sizeof(int) + (record_pos-1)*sizeof(Record), sizeof(Record));
+                    memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
 
                     printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
                     printf("\n");	
@@ -834,7 +840,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 char* d = BF_Block_GetData(b);
 
                 Record r;
-                memcpy(&r, d + size + (record_pos-1)*sizeof(Record), sizeof(Record));
+                memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
 
                 printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
                 counter++;

@@ -324,13 +324,13 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		sz = 2 * sizeof(int) + no_records * sizeof(Record);
 		memcpy(data + sz, &record, sizeof(Record));
 
+		printf("\nInserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
+		*tupleId = data_block_id*BLOCK_CAP + no_records;
+
 		// Update data block's number of records
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
 		
-		printf("\n Inserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
-		*tupleId = data_block_id*BLOCK_CAP + no_records;
-
 		// We changed the data block -> set dirty & unpin
 		BF_Block_SetDirty(data_block);
 		CALL_BF(BF_UnpinBlock(data_block));
@@ -591,7 +591,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			for (int k = 0; k < old_no_records; k++) {
 				memcpy(&rr, old_data_block_data + sz + k * sizeof(Record), sizeof(Record));
 				if (records[i].id == rr.id){
-					 record_pos = k+1;
+					 record_pos = k;
 				}
 			}
 
@@ -623,6 +623,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 
 		open_files[indexDesc].split = 1;
 
+		printf("\n");
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
 			int tuple;
