@@ -587,7 +587,6 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
         return HT_ERROR;
     }
 
-
 	for (int i = 0; i < updateArraySize; i++){
     
 		printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);

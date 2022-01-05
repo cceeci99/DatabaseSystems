@@ -63,7 +63,7 @@ int main() {
 
     char* pfilename = "data.db";
     char* sfilename = "data2.db";
-    int global_depth = 3;
+    int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
@@ -89,7 +89,7 @@ int main() {
     UpdateRecordArray* updateArray;
 
     char temp[30];
-    for (int id = 0; id < 30; ++id) {
+    for (int id = 0; id < 23; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);

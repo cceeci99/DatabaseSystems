@@ -325,7 +325,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		memcpy(data + sz, &record, sizeof(Record));
 
 		printf("\nInserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
-		*tupleId = data_block_id*BLOCK_CAP + no_records;
+		*tupleId = data_block_id*BLOCK_CAP + no_records;	// no_records is the position of the record
 
 		// Update data block's number of records
 		no_records++;
@@ -544,7 +544,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		int old_no_records;
 		memcpy(&old_no_records, old_data_block_data+1*sizeof(int), sizeof(int));
 
-
 		// Set the two data blocks no_records to 0
 		int refresh_no_records = 0;
 		memcpy(old_data_block_data + 1 * sizeof(int), &refresh_no_records, sizeof(int));
@@ -584,18 +583,9 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		for (int i = 0; i < no_records; i++) {
 			sz = 2 * sizeof(int) + i * sizeof(Record);
 			memcpy(&records[i], old_data_block_data + sz, sizeof(Record));
-
-			Record rr;
-			sz = 2 * sizeof(int);
-			int record_pos;
-			for (int k = 0; k < old_no_records; k++) {
-				memcpy(&rr, old_data_block_data + sz + k * sizeof(Record), sizeof(Record));
-				if (records[i].id == rr.id){
-					 record_pos = k;
-				}
-			}
-
-			old_tuple_ids[i] = BLOCK_CAP*old_data_block_id + record_pos;
+			
+			// store the old tupleId for each record that will be reinserted
+			old_tuple_ids[i] = old_data_block_id*BLOCK_CAP + i;
 		}
 		records[no_records] = record; // new record to be inserted
 
@@ -617,8 +607,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		BF_Block_Destroy(&new_data_block);
 
 		UpdateRecordArray* temp = malloc((no_records)*sizeof(UpdateRecordArray));
-
-		*updateArray = malloc((no_records)*sizeof(UpdateRecordArray));
 		*updateArraySize = no_records;
 
 		open_files[indexDesc].split = 1;
@@ -631,21 +619,19 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			if (HT_InsertEntry(indexDesc, records[i], &tuple, updateArray, updateArraySize) == HT_ERROR) {
 				return HT_ERROR;
 			}
-		
+			// return the tupleId for the new inserted record
+			*tupleId = tuple;
+
 			if (i < no_records){
-				memcpy(&temp[i].city, records[i].city, strlen(records[i].city)+1);
-				memcpy(&temp[i].surname, records[i].surname, strlen(records[i].surname)+1);
-				memcpy(&temp[i].oldTupleId, &old_tuple_ids[i], sizeof(int));		
-				memcpy(&temp[i].newTupleId, &tuple, sizeof(int));
+				strcpy(temp[i].city, records[i].city);
+				strcpy(temp[i].surname, records[i].surname);
+				
+				temp[i].oldTupleId = old_tuple_ids[i];
+				temp[i].newTupleId = tuple;
 
 				printf("record with id=%d, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
 			}
-			else{
-				// return the new tuple Id for the secondary record
-				*tupleId = tuple;
 
-			}
-			
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
 		*updateArray = temp;
