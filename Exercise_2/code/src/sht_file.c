@@ -59,6 +59,7 @@ HT_ErrorCode SHT_Init() {
         open_files[i].index_type = -1;
     
     }
+
     return HT_OK;
 }
 
@@ -103,7 +104,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
 
     int limit = no_hash_blocks > 1 ? HASH_CAP : no_buckets;
 
-    for (int i=0; i<no_hash_blocks; i++) {
+    for (int i = 0; i < no_hash_blocks; i++) {
 
         // Allocate and initialize new hash block to 0
         CALL_BF(BF_AllocateBlock(fd, hash_block));
@@ -115,7 +116,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
         int hash_block_id = no_blocks - 1;
         memcpy(metadata + metadata_size + i*sizeof(int), &hash_block_id, sizeof(int));
 
-        for (int j=0; j<limit; j++) {
+        for (int j = 0; j < limit; j++) {
 
             // Allocate new data block and update its local depth and number of records
             CALL_BF(BF_AllocateBlock(fd, data_block));
@@ -226,6 +227,7 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
     open_files[indexDesc].index_type = -1;
+
     return HT_OK;
 }
 
@@ -587,9 +589,9 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
         return HT_ERROR;
     }
 
-	for (int i = 0; i < updateArraySize; i++){
+	for (int i = 0; i < updateArraySize; i++) {
     
-		printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);
+		// printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);
 		
 
         char* byte_string = hash_function(updateArray[i].city);
@@ -641,13 +643,15 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 		for (int j = 0; j < no_records; j++){
 			
 			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
-
+			
+			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
 			if ( (strcmp(updateArray[i].city, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
 					// update the record's tupleId
 					record.tupleId = updateArray[i].newTupleId;
+
 					// write it back to the data_block
 					memcpy(data+size+j*sizeof(SecondaryRecord), &record, sizeof(SecondaryRecord));
 					
@@ -678,7 +682,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 		return HT_ERROR;
 	}
 
-    if (index_key == NULL){
+    if (index_key == NULL) {
         printf("Printing all records of secondary index hash file\n");
 
         BF_Block* block;
@@ -963,6 +967,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 
 	BF_Block_Destroy(&block);
 	BF_Block_Destroy(&data_block);
+	
     return HT_OK;
 }
 
