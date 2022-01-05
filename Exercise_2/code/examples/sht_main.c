@@ -96,7 +96,7 @@ int main() {
     UpdateRecordArray* updateArray;
 
     char temp[30];
-    for (int id = 0; id < 30; ++id) {
+    for (int id = 0; id < 133; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);

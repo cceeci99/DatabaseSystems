@@ -376,15 +376,15 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 					metadata = BF_Block_GetData(block);
 
 					int old_no_hash_blocks;
-					int sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int);/////
+					int sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int);
 					memcpy(&old_no_hash_blocks, metadata + sz, sizeof(int));
 
-					sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int) + old_no_hash_blocks * sizeof(int); /////
+					sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int) + old_no_hash_blocks * sizeof(int);
 					memcpy(metadata + sz, &new_hash_block_id, sizeof(int));
 
 					int new_no_hash_blocks = old_no_hash_blocks + 1;
 					sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int);
-					memcpy(metadata + sz, &new_no_hash_blocks, sizeof(int)); //////
+					memcpy(metadata + sz, &new_no_hash_blocks, sizeof(int));
 
 					// We changed the metadata block -> set dirty & unpin
 					BF_Block_SetDirty(block);
@@ -693,9 +693,6 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 
 					BF_Block_SetDirty(data_block);
 					break;
-				}
-				else {
-					printf("Record hasn't changed tupleId\n");
 				}
 			}		
 		}
