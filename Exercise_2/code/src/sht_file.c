@@ -292,9 +292,8 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     memcpy(&no_records, data + sizeof(int), sizeof(int));
 
     int created_new_blocks = 0;
-
     if (no_records < SECONDARY_BLOCK_CAP) {
-
+		
         size = 2*sizeof(int) + no_records*sizeof(SecondaryRecord);
         memcpy(data + size, &record, sizeof(SecondaryRecord));
 
@@ -595,7 +594,8 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 		
 		// check on which index_key the hashing is done(city or surname)...
 
-        char* byte_string = hash_function(updateArray[i].surname);
+		char* byte_string = hash_function(updateArray[i].city);
+        // char* byte_string = hash_function(updateArray[i].surname);
 
         char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
         for (int i = 0; i < open_files[indexDesc].depth; i++) {
@@ -646,7 +646,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 			
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
-			if ( (strcmp(updateArray[i].surname, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
+			if ( (strcmp(updateArray[i].city, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
@@ -749,16 +749,19 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
 
-                    printf("Wanted record is on block=%d and position=%d\n", block_pos, record_pos);
+                    // printf("Wanted record is on block=%d and position=%d\n", block_pos, record_pos);
+					// printf("Record's tupleId=%d\n", block_pos*BLOCK_CAP + record_pos);
 
                     CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
                     Record r;
                     memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
+				
+					printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
+				
+					printf("\n");
 
-                    printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
-                    printf("\n");	
                     CALL_BF(BF_UnpinBlock(b));
                 }
                 CALL_BF(BF_UnpinBlock(data_block));
@@ -830,7 +833,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
             memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
             
             if (strcmp(index_key, record.index_key) == 0) {
-                printf("Index_key=%s, TupleId = %d\n", record.index_key, record.tupleId);
+                printf("Record {index_key=%s, tupleId=%d}\n", record.index_key, record.tupleId);
 
                 BF_Block* b;
                 BF_Block_Init(&b);
@@ -838,17 +841,19 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 
-                printf("Wanted record is on block=%d and position=%d\n", block_pos, record_pos);
+                // printf("Wanted record is block=%d and position=%d\n", block_pos, record_pos);
 
                 CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
                 char* d = BF_Block_GetData(b);
 
                 Record r;
                 memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
-
+				
                 printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
+			
                 counter++;
-				printf("\n");	
+				printf("\n");
+
                 CALL_BF(BF_UnpinBlock(b));
             }
         }
@@ -973,5 +978,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 }
 
 HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
+	// insert code here
+
     return HT_OK;
 }

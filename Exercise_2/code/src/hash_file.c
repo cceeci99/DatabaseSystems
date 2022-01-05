@@ -779,7 +779,6 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 				for (int k = 0; k < no_records; k++) {
 					memcpy(&record, data + sz + k * sizeof(Record), sizeof(Record));
 					printf("id = %d , name = %s , surname = %s , city = %s \n", record.id, record.name, record.surname, record.city);
-					printf("hash block %d, data block %d record %d\n", hash_block_ids[i], data_block_id, k);
 				}
 
 				// Unpin data block
