@@ -593,8 +593,9 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
     
 		// printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);
 		
+		// check on which index_key the hashing is done(city or surname)...
 
-        char* byte_string = hash_function(updateArray[i].city);
+        char* byte_string = hash_function(updateArray[i].surname);
 
         char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
         for (int i = 0; i < open_files[indexDesc].depth; i++) {
@@ -645,7 +646,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 			
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
-			if ( (strcmp(updateArray[i].city, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
+			if ( (strcmp(updateArray[i].surname, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {

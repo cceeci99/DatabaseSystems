@@ -69,7 +69,8 @@ int main() {
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
 
     CALL_OR_DIE(SHT_Init());
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
+    // CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
 
     int indexDesc;
     int sindexDesc;
@@ -97,7 +98,6 @@ int main() {
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
       r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
-      memcpy(temp, record.city, strlen(record.city)+1);
 
       int updateArraySize;
       int tupleId;
@@ -106,21 +106,32 @@ int main() {
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
       
       if ( open_files[indexDesc].split == 1) {
-          // update()...
-          printf("Calling update secondary index\n");
-          SHT_SecondaryUpdateEntry(sindexDesc, updateArray, updateArraySize);
 
+          for (int k = 0; k < MAX_OPEN_FILES; k++) {
+
+              if (open_files[k].index_type == 0) {  // only for secondary index files with corresponding primary index file...
+
+                  // update()...
+
+                  printf("Calling update for secondary index file %s\n", open_files[k].filename);
+                  SHT_SecondaryUpdateEntry(open_files[k].fd, updateArray, updateArraySize);
+
+              }
+          }
           open_files[indexDesc].split = 0;
           free(updateArray);
       }
 
       SecondaryRecord srecord;
-      memcpy(srecord.index_key, record.city, strlen(record.city)+1);
+      // memcpy(srecord.index_key, record.city, strlen(record.city)+1);
+      memcpy(srecord.index_key, record.surname, strlen(record.surname)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
+      
       printf("\n");
     }
+    
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));

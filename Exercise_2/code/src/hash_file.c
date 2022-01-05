@@ -210,9 +210,10 @@ HT_ErrorCode HT_OpenIndex(const char *filename, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = filename;
-			//
+
 			open_files[i].index_type = 1;
 			open_files[i].split = 0;
+
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -587,6 +588,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 			// store the old tupleId for each record that will be reinserted
 			old_tuple_ids[i] = old_data_block_id*BLOCK_CAP + i;
 		}
+		
 		records[no_records] = record; // new record to be inserted
 
 		// Reinitialize all records to 0
@@ -629,7 +631,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 				temp[i].oldTupleId = old_tuple_ids[i];
 				temp[i].newTupleId = tuple;
 
-				printf("record with id=%d, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
+				printf("record with id=%d, surname=%s, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].surname, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
 			}
 
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times

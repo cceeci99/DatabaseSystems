@@ -28,8 +28,12 @@ typedef struct HF_Info {
 	int no_buckets;
 	int no_hash_blocks;
 	const char* filename;
-	int index_type; 	// 1 for primary 0 for secondary
-	int split;
+
+	// extra fields 
+	int index_type; 	// 1 for primary, 0 for secondary
+	int split;			// 1 if there was a split on primary index 0, if not
+	
+
 } HF_Info;
 
 // Global array
