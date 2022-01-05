@@ -56,8 +56,10 @@ HT_ErrorCode SHT_Init() {
         open_files[i].no_buckets = -1;
         open_files[i].no_hash_blocks = -1;
         open_files[i].filename = NULL;
+
         open_files[i].index_type = -1;
-    
+		open_files[i].which_index_key = 0;
+		open_files[i].split = -1;
     }
 
     return HT_OK;
@@ -86,6 +88,23 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     char* hash_id = "HashFile";
     memcpy(metadata, hash_id, HASH_ID_LEN * sizeof(char));
     metadata_size += HASH_ID_LEN*sizeof(char);
+
+
+	char which_index_key;
+	// // store a char to define which index key is used for hashing, c for city, s for surname.
+	if (strcmp(attrName, "city")==0){
+		which_index_key = 'c';
+	}
+	else if (strcmp(attrName, "surname")==0){
+		which_index_key = 's';
+	}
+	else{
+		fprintf(stderr, "Not available index_key\n");
+		return HT_ERROR;
+	}
+
+	memcpy(metadata + metadata_size, &which_index_key, 1*sizeof(char));
+	metadata_size += 1*sizeof(char);
 
     // set the global depth of the hashfile
     memcpy(metadata+metadata_size, &depth, sizeof(int));
@@ -181,10 +200,13 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 		return HT_ERROR;
 	}
 
+	char which_index_key;
+	memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+
     // Fetch its depth and no_hash_blocks
 	int depth, no_hash_blocks;
-	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char), sizeof(int));
-	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(int), sizeof(int));
+	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), sizeof(int));
+	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1*sizeof(int), sizeof(int));
 
 	// Unpin metadata block - we just read from it
 	CALL_BF(BF_UnpinBlock(block));
@@ -200,7 +222,10 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = sfileName;
-            open_files[i].index_type = 0;       // secondary index
+
+			open_files[i].index_type = 0;       // secondary index
+			open_files[i].which_index_key = which_index_key;
+			
 			*indexDesc = i;  // position in open_files array
 			flag = 0;
 		}
@@ -226,7 +251,9 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
+
     open_files[indexDesc].index_type = -1;
+	open_files[indexDesc].which_index_key = 0;
 
     return HT_OK;
 }
@@ -260,7 +287,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     char* metadata = BF_Block_GetData(block);
 
     int actual_hash_block_id;
-    size_t size = HASH_ID_LEN * sizeof(char) + 2*sizeof(int);
+    size_t size = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
     memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
 
     int no_hash_blocks = open_files[indexDesc].no_hash_blocks;
@@ -349,15 +376,15 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 					metadata = BF_Block_GetData(block);
 
 					int old_no_hash_blocks;
-					int sz = HASH_ID_LEN * sizeof(char) + 1 * sizeof(int);
+					int sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int);/////
 					memcpy(&old_no_hash_blocks, metadata + sz, sizeof(int));
 
-					sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int) + old_no_hash_blocks * sizeof(int);
+					sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int) + old_no_hash_blocks * sizeof(int); /////
 					memcpy(metadata + sz, &new_hash_block_id, sizeof(int));
 
 					int new_no_hash_blocks = old_no_hash_blocks + 1;
-					sz = HASH_ID_LEN * sizeof(char) + 1 * sizeof(int);
-					memcpy(metadata + sz, &new_no_hash_blocks, sizeof(int));
+					sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int);
+					memcpy(metadata + sz, &new_no_hash_blocks, sizeof(int)); //////
 
 					// We changed the metadata block -> set dirty & unpin
 					BF_Block_SetDirty(block);
@@ -376,7 +403,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 				// Save the ids of the the hash blocks
 				int* hash_block_ids = malloc(new_no_hash_blocks * sizeof(int));
 				
-				int sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int);
+				int sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int);
 				for (int i = 0; i < new_no_hash_blocks; i++) {
 					memcpy(&hash_block_ids[i], metadata + sz + i * sizeof(int), sizeof(int));
 				}
@@ -449,7 +476,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 			// Update depth in metadata block
 			CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
 			metadata = BF_Block_GetData(block);				
-			memcpy(metadata + HASH_ID_LEN * sizeof(char), &open_files[indexDesc].depth, sizeof(int));
+			memcpy(metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), &open_files[indexDesc].depth, sizeof(int));
 
 			// We changed metadata block -> set dirty & unpin
 			BF_Block_SetDirty(block);
@@ -480,7 +507,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 			CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
 			metadata = BF_Block_GetData(block);
 
-			int sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int);
+			int sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int);
 			memcpy(&actual_hash_block_id, metadata + sz + hash_block_index * sizeof(int), sizeof(int));
 
 			// Unpin metadata block
@@ -590,12 +617,18 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 
 	for (int i = 0; i < updateArraySize; i++) {
     
-		// printf("record with index_key city=%s, old_tuple_id=%d, new_tuple_id=%d\n",updateArray[i].city, updateArray[i].oldTupleId, updateArray[i].newTupleId);
-		
-		// check on which index_key the hashing is done(city or surname)...
+		char* index_key;
 
-		char* byte_string = hash_function(updateArray[i].city);
-        // char* byte_string = hash_function(updateArray[i].surname);
+		if ( open_files[indexDesc].which_index_key == 'c'){
+			// hash on city
+			index_key = updateArray[i].city;
+		}
+		else {
+			// hash on surname
+			index_key = updateArray[i].surname;
+		}
+
+		char* byte_string = hash_function(index_key);
 
         char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
         for (int i = 0; i < open_files[indexDesc].depth; i++) {
@@ -618,7 +651,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
         char* metadata = BF_Block_GetData(block);
 
         int actual_hash_block_id;
-        size_t size = HASH_ID_LEN*sizeof(char) + 2*sizeof(int);
+        size_t size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
         memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
 
         CALL_BF(BF_UnpinBlock(block));
@@ -644,9 +677,9 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 		for (int j = 0; j < no_records; j++){
 			
 			memcpy(&record, data + size + j*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
-			
+
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
-			if ( (strcmp(updateArray[i].city, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
+			if ( (strcmp(index_key, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
@@ -684,7 +717,14 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 	}
 
     if (index_key == NULL) {
-        printf("Printing all records of secondary index hash file\n");
+		char* which_key;
+		if (open_files[sindexDesc].which_index_key == 'c') {
+			which_key = "city";
+		}
+		else{
+			which_key = "surname";
+		}
+        printf("Printing all records of secondary index hash file with index_key=%s\n", which_key);
 
         BF_Block* block;
         BF_Block_Init(&block);
@@ -695,7 +735,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         int no_hash_blocks = open_files[sindexDesc].no_hash_blocks;
         int* hash_block_ids = malloc(no_hash_blocks*sizeof(int));
 
-        size_t size = HASH_ID_LEN*sizeof(char) + 2*sizeof(int);
+        size_t size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
 
         for (int i = 0; i < no_hash_blocks; i++) {
             memcpy(&hash_block_ids[i], metadata + size + i*sizeof(int), sizeof(int));
@@ -803,7 +843,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         char* metadata = BF_Block_GetData(block);
 
         int actual_hash_block_id;
-        size_t size = HASH_ID_LEN*sizeof(char) + 2*sizeof(int);
+        size_t size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
         memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
 
         CALL_BF(BF_UnpinBlock(block));
@@ -893,14 +933,14 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 
 	// Fetch its depth and no_hash_blocks
 	int depth, no_hash_blocks;
-	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char), sizeof(int));
-	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1 * sizeof(int), sizeof(int));
+	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), sizeof(int));
+	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int), sizeof(int));
 
 	int no_buckets = 2 << (depth - 1);
 
 	int* hash_block_ids = malloc(no_hash_blocks * sizeof(int));
 
-	size_t sz = HASH_ID_LEN * sizeof(char) + 2 * sizeof(int);
+	size_t sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int);
 	for (int i = 0; i < no_hash_blocks; i++) {
 		memcpy(&hash_block_ids[i], metadata + sz + i * sizeof(int), sizeof(int));
 	}

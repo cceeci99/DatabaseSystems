@@ -63,6 +63,8 @@ int main() {
 
     char* pfilename = "data.db";
     char* sfilename = "data2.db";
+    char* ssfilename = "data3.db";
+
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
@@ -70,12 +72,16 @@ int main() {
 
     CALL_OR_DIE(SHT_Init());
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
-    // CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(ssfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
 
     int indexDesc;
     int sindexDesc;
+    int ssindexDesc;
+
 	  CALL_OR_DIE(HT_OpenIndex(pfilename, &indexDesc)); 
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename, &sindexDesc));
+    CALL_OR_DIE(SHT_OpenSecondaryIndex(ssfilename, &ssindexDesc));
+    
 
     Record record;
     srand(time(NULL));
@@ -90,7 +96,7 @@ int main() {
     UpdateRecordArray* updateArray;
 
     char temp[30];
-    for (int id = 0; id < 140; ++id) {
+    for (int id = 0; id < 30; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
@@ -124,10 +130,15 @@ int main() {
 
       SecondaryRecord srecord;
       memcpy(srecord.index_key, record.city, strlen(record.city)+1);
-      // memcpy(srecord.index_key, record.surname, strlen(record.surname)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
+      SecondaryRecord ssrecord;
+      memcpy(ssrecord.index_key, record.surname, strlen(record.surname)+1);
+      memcpy(&ssrecord.tupleId, &tupleId, sizeof(int));
+
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
+      CALL_OR_DIE(SHT_SecondaryInsertEntry(ssindexDesc, ssrecord));
+
 
       printf("\n");
     }
@@ -135,9 +146,13 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));
+    CALL_OR_DIE(SHT_PrintAllEntries(ssindexDesc, NULL));
+    
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
+    CALL_OR_DIE(SHT_CloseSecondaryIndex(ssindexDesc));
+
 
     BF_Close();
 

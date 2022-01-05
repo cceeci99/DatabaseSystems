@@ -52,9 +52,11 @@ HT_ErrorCode HT_Init() {
 		open_files[i].no_buckets = -1;
 		open_files[i].no_hash_blocks = -1;
 		open_files[i].filename = NULL;
-		//
+
 		open_files[i].index_type = -1;
+		open_files[i].which_index_key = '\0';
 		open_files[i].split = -1;
+
 	}
  	return HT_OK;
 }

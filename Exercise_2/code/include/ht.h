@@ -30,8 +30,9 @@ typedef struct HF_Info {
 	const char* filename;
 
 	// extra fields 
-	int index_type; 	// 1 for primary, 0 for secondary
-	int split;			// 1 if there was a split on primary index 0, if not
+	int index_type; 		// 1 for primary, 0 for secondary
+	char which_index_key;	// 'c' for city, 's' for surname
+	int split;				// 1 if there was a split on primary index 0, if not
 	
 
 } HF_Info;
