@@ -36,18 +36,20 @@ const char* surnames[] = {
   "Halatsis"
 };
 
-const char* cities[] = {
-  "Athens",
-  "San Francisco",
-  "Los Angeles",
-  "Amsterdam",
-  "London",
-  "New York",
-  "Tokyo",
-  "Hong Kong",
-  "Munich",
-  "Miami"
-};
+// const char* cities[] = {
+//   "Athens",
+//   "San Francisco",
+//   "Los Angeles",
+//   "Amsterdam",
+//   "London",
+//   "New York",
+//   "Tokyo",
+//   "Hong Kong",
+//   "Munich",
+//   "Miami"
+// };
+
+char cities[300][50];
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -58,12 +60,32 @@ const char* cities[] = {
     }                         \
   }
 
+void read_cities(){
+    char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/examples/cities.txt";
+    FILE *file = fopen(file_name, "r");
+
+    if ( file == NULL ){
+        printf("Could not open file with name: '%s' \n", file_name);
+        exit(EXIT_FAILURE);
+    }
+    
+    char line[50];
+    int i=0;
+    while ( fgets(line, 50, file) != NULL ){
+        memcpy(cities[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
+        i++;
+    }
+    fclose(file);
+}
+
 int main() {
     BF_Init(LRU);
+    
+    read_cities();
 
     char* pfilename = "data.db";
     char* sfilename = "data2.db";
-    char* ssfilename = "data3.db";
+    // char* ssfilename = "data3.db";
 
     int global_depth = 2;
 
@@ -71,16 +93,16 @@ int main() {
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
 
     CALL_OR_DIE(SHT_Init());
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city")+1, global_depth, "data.db"));
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(ssfilename, "surname", strlen("surname")+1, global_depth, "data.db"));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city"), global_depth, "data.db"));
+    // CALL_OR_DIE(SHT_CreateSecondaryIndex(ssfilename, "surname", strlen("surname"), global_depth, "data.db"));
 
     int indexDesc;
     int sindexDesc;
-    int ssindexDesc;
+    // int ssindexDesc;
 
 	  CALL_OR_DIE(HT_OpenIndex(pfilename, &indexDesc)); 
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename, &sindexDesc));
-    CALL_OR_DIE(SHT_OpenSecondaryIndex(ssfilename, &ssindexDesc));
+    // CALL_OR_DIE(SHT_OpenSecondaryIndex(ssfilename, &ssindexDesc));
     
 
     Record record;
@@ -94,19 +116,20 @@ int main() {
     printf("\n");
 
     UpdateRecordArray* updateArray;
+    int updateArraySize;
+    
+    int tupleId;
 
     char temp[30];
-    for (int id = 0; id < 133; ++id) {
+    for (int id = 0; id < 100; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
       r = rand() % 12;
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-      r = rand() % 10;
+      r = rand() % 300;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
-      int updateArraySize;
-      int tupleId;
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
@@ -117,9 +140,8 @@ int main() {
 
               if (open_files[k].index_type == 0) {  // only for secondary index files with corresponding primary index file...
 
-                  // update()...
+                  printf("Calling update for secondary index file %s ...\n", open_files[k].filename);
 
-                  printf("Calling update for secondary index file %s\n", open_files[k].filename);
                   SHT_SecondaryUpdateEntry(open_files[k].fd, updateArray, updateArraySize);
 
               }
@@ -132,13 +154,13 @@ int main() {
       memcpy(srecord.index_key, record.city, strlen(record.city)+1);
       memcpy(&srecord.tupleId, &tupleId, sizeof(int));
 
-      SecondaryRecord ssrecord;
-      memcpy(ssrecord.index_key, record.surname, strlen(record.surname)+1);
-      memcpy(&ssrecord.tupleId, &tupleId, sizeof(int));
-
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
-      CALL_OR_DIE(SHT_SecondaryInsertEntry(ssindexDesc, ssrecord));
 
+      // SecondaryRecord ssrecord;
+      // memcpy(ssrecord.index_key, record.surname, strlen(record.surname)+1);
+      // memcpy(&ssrecord.tupleId, &tupleId, sizeof(int));
+
+      // CALL_OR_DIE(SHT_SecondaryInsertEntry(ssindexDesc, ssrecord));
 
       printf("\n");
     }
@@ -146,12 +168,12 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));
-    CALL_OR_DIE(SHT_PrintAllEntries(ssindexDesc, NULL));
+    // CALL_OR_DIE(SHT_PrintAllEntries(ssindexDesc, NULL));
     
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
-    CALL_OR_DIE(SHT_CloseSecondaryIndex(ssindexDesc));
+    // CALL_OR_DIE(SHT_CloseSecondaryIndex(ssindexDesc));
 
 
     BF_Close();

@@ -58,7 +58,7 @@ HT_ErrorCode SHT_Init() {
         open_files[i].filename = NULL;
 
         open_files[i].index_type = -1;
-		open_files[i].which_index_key = 0;
+		open_files[i].which_index_key = '\0';
 		open_files[i].split = -1;
     }
 
@@ -253,7 +253,7 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].filename = NULL;
 
     open_files[indexDesc].index_type = -1;
-	open_files[indexDesc].which_index_key = 0;
+	open_files[indexDesc].which_index_key = '\0';
 
     return HT_OK;
 }

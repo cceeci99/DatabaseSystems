@@ -250,9 +250,10 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
-	//
+
 	open_files[indexDesc].split = -1;
 	open_files[indexDesc].index_type = -1;
+	
 	return HT_OK;
 }
 
