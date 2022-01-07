@@ -116,7 +116,7 @@ int main() {
     
     char temp[30];
 
-    for (int id = 0; id < 23; ++id) {
+    for (int id = 0; id < 500; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
@@ -159,7 +159,9 @@ int main() {
     
     printf("\n");
     
+    printf("Print record from secondary index\n");
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
+    printf("Print record from primary index\n");
     CALL_OR_DIE(HT_PrintAllEntries(pindexDesc, &tempid));
 
 

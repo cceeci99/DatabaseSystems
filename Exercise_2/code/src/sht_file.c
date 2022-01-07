@@ -47,7 +47,6 @@ static char* hash_function(const char* index_key){
     return result;
 }
 
-
 HT_ErrorCode SHT_Init() {
 
     return HT_OK;
