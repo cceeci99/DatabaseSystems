@@ -61,7 +61,7 @@ char cities[300][50];
   }
 
 void read_cities(){
-    char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/examples/cities.txt";
+    char* file_name = "code/cities.txt";
     FILE *file = fopen(file_name, "r");
 
     if ( file == NULL ){

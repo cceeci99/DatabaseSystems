@@ -1016,6 +1016,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 
 HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 	// insert code here
+	
 
     return HT_OK;
 }

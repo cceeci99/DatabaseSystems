@@ -26,4 +26,4 @@ time:
 	time ./build/runner files/hash_files/data.db 1000 2
 
 clean:
-	rm -f ./build/runner files/hash_files/*.db files/logs/*.txt *.db *.txt
+	rm -f ./build/runner files/hash_files/*.db files/logs/*.txt *.db
