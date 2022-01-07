@@ -9,6 +9,8 @@
 
 
 #define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) ) // max records per block for primary index
+
+// ο αριθμός των εγγραφών που χωράει το δευτερεύον ευρετήριο αλλάζει καθώς αλλάζει η δομη της εγγραφής που αποθηκεύεται.
 #define SECONDARY_BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2*sizeof(int)) / sizeof(SecondaryRecord) )	// max records per block for secondary index
 
 
@@ -48,19 +50,6 @@ static char* hash_function(const char* index_key){
 
 HT_ErrorCode SHT_Init() {
 
-    // initialize open_files array 
-    for (int i = 0; i < MAX_OPEN_FILES; i++) {
-        open_files[i].fd = -1;
-        open_files[i].depth = -1;
-        open_files[i].inserted = -1;
-        open_files[i].no_buckets = -1;
-        open_files[i].no_hash_blocks = -1;
-        open_files[i].filename = NULL;
-        open_files[i].index_type = -1;
-		open_files[i].which_index_key = '\0';
-		open_files[i].split = -1;
-    }
-
     return HT_OK;
 }
 
@@ -90,7 +79,7 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
 
 	char which_index_key;
 
-	// // store a char to define which index key is used for hashing, c for city, s for surname.
+	// // add a single char to define which index key is used for hashing, c for city, s for surname.
 	if (strcmp(attrName, "city")==0){
 		which_index_key = 'c';
 	}
@@ -687,7 +676,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
 			if ( (strcmp(index_key, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
-				printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
+				// printf("record with index_key=%s, tupleId=%d\n", record.index_key, record.tupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
 					// update the record's tupleId
@@ -696,7 +685,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 					// write it back to the data_block
 					memcpy(data+size+j*sizeof(SecondaryRecord), &record, sizeof(SecondaryRecord));
 					
-					printf("Update secondary record tupleId=%d\n", record.tupleId);
+					// printf("Update secondary record tupleId=%d\n", record.tupleId);
 
 					BF_Block_SetDirty(data_block);
 					break;
@@ -715,7 +704,8 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 }
 
 HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
-    if (sindexDesc < 0 || sindexDesc > MAX_OPEN_FILES) {
+    
+	if (sindexDesc < 0 || sindexDesc > MAX_OPEN_FILES) {
 		fprintf(stderr, "Error: index out of bounds\n");
 		return HT_ERROR;
 	}
