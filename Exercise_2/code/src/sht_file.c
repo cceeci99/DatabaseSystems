@@ -792,8 +792,10 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
+					
+					int primaryIndex = open_files[sindexDesc].which_primary;
 
-                    CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
+					CALL_BF(BF_GetBlock(open_files[primaryIndex].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
                     Record r;
@@ -881,8 +883,10 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
-
-                CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
+				
+				int primaryIndex = open_files[sindexDesc].which_primary;
+               
+			    CALL_BF(BF_GetBlock(open_files[primaryIndex].fd , block_pos, b));
                 char* d = BF_Block_GetData(b);
 
                 Record r;

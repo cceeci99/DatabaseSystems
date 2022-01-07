@@ -30,6 +30,7 @@ typedef struct HF_Info {
 	const char* filename;
 	// extra fields
 	int index_type; 					// 1 for primary, 0 for secondary
+	int which_primary;					// θέση στον πινακα των ανοικτών αρχείων του αντίστοιχου αρχείου πρωτευοντος ευρετηριου πανω στο οποίο δημιουργείται το δευτερεύον
 	char which_index_key;				// 'c' for city, 's' for surname
 	int split;							// 1 if there was a split on primary index 0, if not
 

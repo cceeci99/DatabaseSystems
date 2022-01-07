@@ -84,7 +84,7 @@ int main() {
     read_cities();
 
     char* pfilename = "data.db";
-    char* sfilename = "data2.db";
+    char* sfilename = "sdata.db";
 
     char* index_key = "city";
 
@@ -93,13 +93,16 @@ int main() {
     CALL_OR_DIE(HT_Init());
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
 
-    int indexDesc;
-	  CALL_OR_DIE(HT_OpenIndex(pfilename, &indexDesc)); 
+    int pindexDesc;
+	  CALL_OR_DIE(HT_OpenIndex(pfilename, &pindexDesc)); 
 
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, index_key, strlen(index_key), global_depth, pfilename));
 
     int sindexDesc;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename, &sindexDesc));
+
+    // set the corresponding primary' s position in open_files
+    open_files[sindexDesc].which_primary = pindexDesc;
 
     Record record;
     srand(time(NULL));
@@ -127,9 +130,9 @@ int main() {
       memcpy(temp, cities[r], (strlen(cities[r])+1)*sizeof(char));
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
-      CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
+      CALL_OR_DIE(HT_InsertEntry(pindexDesc, record, &tupleId, &updateArray, &updateArraySize));
       
-      if ( open_files[indexDesc].split == 1) {
+      if (open_files[pindexDesc].split == 1) {
 
           for (int k = 0; k < MAX_OPEN_FILES; k++) {
 
@@ -141,7 +144,7 @@ int main() {
 
               }
           }
-          open_files[indexDesc].split = 0;
+          open_files[pindexDesc].split = 0;
           free(updateArray);
       }
 
@@ -157,10 +160,10 @@ int main() {
     printf("\n");
     
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
-    CALL_OR_DIE(HT_PrintAllEntries(indexDesc, &tempid));
+    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc, &tempid));
 
 
-    CALL_OR_DIE(HT_CloseFile(indexDesc));
+    CALL_OR_DIE(HT_CloseFile(pindexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
 
     BF_Close();
