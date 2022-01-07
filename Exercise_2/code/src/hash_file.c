@@ -52,7 +52,6 @@ HT_ErrorCode HT_Init() {
 		open_files[i].no_buckets = -1;
 		open_files[i].no_hash_blocks = -1;
 		open_files[i].filename = NULL;
-
 		open_files[i].index_type = -1;
 		open_files[i].which_index_key = '\0';
 		open_files[i].split = -1;
@@ -212,7 +211,6 @@ HT_ErrorCode HT_OpenIndex(const char *filename, int *indexDesc) {
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = filename;
-
 			open_files[i].index_type = 1;
 			open_files[i].split = 0;
 
@@ -250,7 +248,6 @@ HT_ErrorCode HT_CloseFile(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
-
 	open_files[indexDesc].split = -1;
 	open_files[indexDesc].index_type = -1;
 	
@@ -658,7 +655,8 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 	}
 
 	if (id != NULL) {
-
+		printf("Printig record with id=%d\n", *id);
+		
 		// Get the hashed value of the id
 		char* byte_string = hash_function(*id);
 		

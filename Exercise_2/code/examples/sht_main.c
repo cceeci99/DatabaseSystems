@@ -85,43 +85,35 @@ int main() {
 
     char* pfilename = "data.db";
     char* sfilename = "data2.db";
-    // char* ssfilename = "data3.db";
+
+    char* index_key = "city";
 
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
     CALL_OR_DIE(HT_CreateIndex(pfilename, global_depth));
 
-    CALL_OR_DIE(SHT_Init());
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, "city", strlen("city"), global_depth, "data.db"));
-    // CALL_OR_DIE(SHT_CreateSecondaryIndex(ssfilename, "surname", strlen("surname"), global_depth, "data.db"));
-
     int indexDesc;
-    int sindexDesc;
-    // int ssindexDesc;
-
 	  CALL_OR_DIE(HT_OpenIndex(pfilename, &indexDesc)); 
+
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename, index_key, strlen(index_key), global_depth, pfilename));
+
+    int sindexDesc;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename, &sindexDesc));
-    // CALL_OR_DIE(SHT_OpenSecondaryIndex(ssfilename, &ssindexDesc));
-    
 
     Record record;
     srand(time(NULL));
     int r;
     
-    printf("\nINSERT ENTRIES\n");
-    for (int i = 0; i < 150; i++) {
-      printf("-");
-    }
-    printf("\n");
-
     UpdateRecordArray* updateArray;
     int updateArraySize;
     
     int tupleId;
-
+    int tempid;
+    
     char temp[30];
-    for (int id = 0; id < 100; ++id) {
+
+    for (int id = 0; id < 23; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
@@ -130,6 +122,9 @@ int main() {
       r = rand() % 300;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
+      // print some records
+      tempid = record.id;
+      memcpy(temp, cities[r], (strlen(cities[r])+1)*sizeof(char));
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
       CALL_OR_DIE(HT_InsertEntry(indexDesc, record, &tupleId, &updateArray, &updateArraySize));
@@ -156,25 +151,17 @@ int main() {
 
       CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc, srecord));
 
-      // SecondaryRecord ssrecord;
-      // memcpy(ssrecord.index_key, record.surname, strlen(record.surname)+1);
-      // memcpy(&ssrecord.tupleId, &tupleId, sizeof(int));
-
-      // CALL_OR_DIE(SHT_SecondaryInsertEntry(ssindexDesc, ssrecord));
-
       printf("\n");
     }
     
     printf("\n");
     
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));
-    // CALL_OR_DIE(SHT_PrintAllEntries(ssindexDesc, NULL));
-    
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, temp));
+    CALL_OR_DIE(HT_PrintAllEntries(indexDesc, &tempid));
+
 
     CALL_OR_DIE(HT_CloseFile(indexDesc));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc));
-    // CALL_OR_DIE(SHT_CloseSecondaryIndex(ssindexDesc));
-
 
     BF_Close();
 

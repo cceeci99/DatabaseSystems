@@ -56,7 +56,6 @@ HT_ErrorCode SHT_Init() {
         open_files[i].no_buckets = -1;
         open_files[i].no_hash_blocks = -1;
         open_files[i].filename = NULL;
-
         open_files[i].index_type = -1;
 		open_files[i].which_index_key = '\0';
 		open_files[i].split = -1;
@@ -89,8 +88,8 @@ HT_ErrorCode SHT_CreateSecondaryIndex(const char *sfileName, char *attrName, int
     memcpy(metadata, hash_id, HASH_ID_LEN * sizeof(char));
     metadata_size += HASH_ID_LEN*sizeof(char);
 
-
 	char which_index_key;
+
 	// // store a char to define which index key is used for hashing, c for city, s for surname.
 	if (strcmp(attrName, "city")==0){
 		which_index_key = 'c';
@@ -195,18 +194,24 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
     char* metadata = BF_Block_GetData(block);
     memcpy(test_hash, metadata, HASH_ID_LEN*sizeof(char));
 
+	size_t metadata_size = HASH_ID_LEN * sizeof(char);
+
     if (strcmp(test_hash, "HashFile") != 0) {
 		fprintf(stderr, "Error: this is not a valid hash file\n");
 		return HT_ERROR;
 	}
-
+	
 	char which_index_key;
-	memcpy(&which_index_key, metadata + HASH_ID_LEN*sizeof(char), sizeof(char));
+	memcpy(&which_index_key, metadata + metadata_size, sizeof(char));
+	metadata_size += 1 * sizeof(char);
 
     // Fetch its depth and no_hash_blocks
-	int depth, no_hash_blocks;
-	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), sizeof(int));
-	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1*sizeof(int), sizeof(int));
+	int depth;
+	memcpy(&depth, metadata + metadata_size, sizeof(int));
+	metadata_size += 1 * sizeof(int);
+
+	int no_hash_blocks;
+	memcpy(&no_hash_blocks, metadata + metadata_size, sizeof(int));
 
 	// Unpin metadata block - we just read from it
 	CALL_BF(BF_UnpinBlock(block));
@@ -216,13 +221,13 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 	while (flag && i < MAX_OPEN_FILES) {
 		if (open_files[i].fd == -1) {  // Find first available position
 			printf("Attaching secondary index hash file with name '%s', fd=%d, depth=%d, no_hash_blocks=%d to open_files[%d]\n", sfileName, fd, depth, no_hash_blocks, i);
+			
 			open_files[i].fd = fd;
 			open_files[i].depth = depth;
 			open_files[i].inserted = 0;
 			open_files[i].no_buckets = 2 << (depth - 1);
 			open_files[i].no_hash_blocks = no_hash_blocks;
 			open_files[i].filename = sfileName;
-
 			open_files[i].index_type = 0;       // secondary index
 			open_files[i].which_index_key = which_index_key;
 			
@@ -251,7 +256,6 @@ HT_ErrorCode SHT_CloseSecondaryIndex(int indexDesc) {
 	open_files[indexDesc].no_buckets = -1;
 	open_files[indexDesc].no_hash_blocks = -1;
 	open_files[indexDesc].filename = NULL;
-
     open_files[indexDesc].index_type = -1;
 	open_files[indexDesc].which_index_key = '\0';
 
@@ -475,8 +479,11 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
 			// Update depth in metadata block
 			CALL_BF(BF_GetBlock(open_files[indexDesc].fd, 0, block));
-			metadata = BF_Block_GetData(block);				
-			memcpy(metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), &open_files[indexDesc].depth, sizeof(int));
+			metadata = BF_Block_GetData(block);
+
+			size_t metadata_size;
+			metadata_size = HASH_ID_LEN * sizeof(char) + 1 * sizeof(char);
+			memcpy(metadata + metadata_size, &open_files[indexDesc].depth, sizeof(int));
 
 			// We changed metadata block -> set dirty & unpin
 			BF_Block_SetDirty(block);
@@ -786,9 +793,6 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
 
-                    // printf("Wanted record is on block=%d and position=%d\n", block_pos, record_pos);
-					// printf("Record's tupleId=%d\n", block_pos*BLOCK_CAP + record_pos);
-
                     CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
@@ -878,8 +882,6 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 
-                // printf("Wanted record is block=%d and position=%d\n", block_pos, record_pos);
-
                 CALL_BF(BF_GetBlock(open_files[0].fd, block_pos, b));
                 char* d = BF_Block_GetData(b);
 
@@ -928,18 +930,23 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 		return HT_ERROR;
 	}
 
+	size_t size = HASH_ID_LEN * sizeof(char) + 1 * sizeof(char);
+
 	// Fetch its depth and no_hash_blocks
-	int depth, no_hash_blocks;
-	memcpy(&depth, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char), sizeof(int));
-	memcpy(&no_hash_blocks, metadata + HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 1 * sizeof(int), sizeof(int));
+	int depth;
+	memcpy(&depth, metadata + size, sizeof(int));
+	size += sizeof(int);
+	
+	int no_hash_blocks;
+	memcpy(&no_hash_blocks, metadata + size, sizeof(int));
+	size += sizeof(int);
 
 	int no_buckets = 2 << (depth - 1);
 
 	int* hash_block_ids = malloc(no_hash_blocks * sizeof(int));
 
-	size_t sz = HASH_ID_LEN * sizeof(char) + 1*sizeof(char) + 2 * sizeof(int);
 	for (int i = 0; i < no_hash_blocks; i++) {
-		memcpy(&hash_block_ids[i], metadata + sz + i * sizeof(int), sizeof(int));
+		memcpy(&hash_block_ids[i], metadata + size + i * sizeof(int), sizeof(int));
 	}
 
 	// Unpin metadata block - we just read from it
