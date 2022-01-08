@@ -318,7 +318,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 
         no_records++;
         memcpy(data + 1*sizeof(int), &no_records, sizeof(int));
-        printf("Inserting secondary index record{%s , %d}\n", record.index_key, record.tupleId);
+        // printf("Inserting secondary index record{%s , %d}\n", record.index_key, record.tupleId);
 
         BF_Block_SetDirty(data_block);
         CALL_BF(BF_UnpinBlock(data_block));
@@ -717,7 +717,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 		else{
 			which_key = "surname";
 		}
-        printf("Printing all records of secondary index hash file with index_key=%s\n", which_key);
+        printf("Printing all records of secondary index hash file %s with index_key=%s\n", open_files[sindexDesc].filename, which_key);
 
         BF_Block* block;
         BF_Block_Init(&block);
@@ -810,7 +810,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
     }
     else{
-        printf("Searching record with index key= %s\n", index_key);
+        printf("Printing records with index key= %s from secondary index hash file %s\n", index_key, open_files[sindexDesc].filename);
 
         char* byte_string = hash_function(index_key);
 
@@ -1014,9 +1014,182 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
     return HT_OK;
 }
 
+
 HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
-	// insert code here
-	
+	// check first if secondary indexes are hashing on same index-key, if so return error
+	if (open_files[sindexDesc1].which_index_key != open_files[sindexDesc2].which_index_key) {
+		fprintf(stderr, "Secondary indexes must have same index_key");
+		return HT_ERROR;
+	}
+
+	int p1 = open_files[sindexDesc1].which_primary;
+	int p2 = open_files[sindexDesc2].which_primary;
+		
+	if (index_key != NULL) {
+		printf("Inner join on index_key=%s\n", index_key);
+		
+		char* byte_string = hash_function(index_key);
+		char* msb = malloc((open_files[sindexDesc1].depth + 1)*sizeof(char));
+
+        for (int i = 0; i < open_files[sindexDesc1].depth; i++) {
+            msb[i] = byte_string[i];
+        }
+
+		msb[open_files[sindexDesc1].depth] = '\0';
+
+		char* tmp;
+		int bucket = strtol(msb, &tmp, 2);
+		free(msb);
+
+		int hash_block_index = bucket / HASH_CAP;
+		int hash_block_pos = bucket % HASH_CAP;
+
+		BF_Block* block;
+		BF_Block_Init(&block);
+
+		CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, 0, block));
+		char* metadata = BF_Block_GetData(block);
+
+		int actual_hash_block_id;
+		size_t size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
+
+		memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+
+		CALL_BF(BF_UnpinBlock(block));
+
+		CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, actual_hash_block_id, block));
+		char* hash_data = BF_Block_GetData(block);
+
+		int data_block_id;
+		memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+
+		BF_Block* data_block;
+		BF_Block_Init(&data_block);
+
+		CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, data_block_id, data_block));
+		char* data = BF_Block_GetData(data_block);
+
+		int no_records;
+		memcpy(&no_records, data + 1*sizeof(int), sizeof(int));
+
+		SecondaryRecord record;
+		size = 2*sizeof(int);
+
+		for (int i = 0; i < no_records; i++) {
+			// get the record
+			memcpy(&record, data + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
+			// find the record from the first secondary index
+			if ( strcmp(index_key, record.index_key) == 0 ) {
+				
+				printf("found record on 1st hash file\n");
+
+				BF_Block* b;
+                BF_Block_Init(&b);
+
+                int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
+                int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+				
+			    CALL_BF(BF_GetBlock(open_files[p1].fd , block_pos, b));
+                char* d = BF_Block_GetData(b);
+
+				// get primary record r
+				Record r;
+                memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
+				
+				printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
+				
+				CALL_BF(BF_UnpinBlock(b));
+			}
+		}
+
+		CALL_BF(BF_UnpinBlock(data_block));
+        CALL_BF(BF_UnpinBlock(block));
+
+ 		BF_Block_Destroy(&data_block);
+        BF_Block_Destroy(&block);
+		
+			// for secondary record r with index_key find matching records from the second file
+
+				byte_string = hash_function(index_key);
+				msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
+
+				for (int i = 0; i < open_files[sindexDesc2].depth; i++) {
+					msb[i] = byte_string[i];
+				}
+
+				msb[open_files[sindexDesc2].depth] = '\0';
+
+				bucket = strtol(msb, &tmp, 2);
+				free(msb);
+
+				hash_block_index = bucket / HASH_CAP;
+				hash_block_pos = bucket % HASH_CAP;
+
+				BF_Block* block2;
+				BF_Block_Init(&block2);
+
+				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, 0, block2));
+				metadata = BF_Block_GetData(block2);
+
+				size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
+
+				memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+
+				CALL_BF(BF_UnpinBlock(block2));
+
+				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
+				hash_data = BF_Block_GetData(block2);
+
+				memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+
+				BF_Block* data_block2;
+				BF_Block_Init(&data_block2);
+
+				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
+				char* data2 = BF_Block_GetData(data_block2);
+
+				no_records;
+				memcpy(&no_records, data2 + 1*sizeof(int), sizeof(int));
+
+				SecondaryRecord record2;
+				size = 2*sizeof(int);
+
+				for (int i = 0; i < no_records; i++) {
+					// get the record
+					memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
+					// find the record from the first secondary index
+					if ( strcmp(index_key, record2.index_key) == 0 ) {
+						
+						printf("found record on second hash file\n");
+
+						BF_Block* bb;
+						BF_Block_Init(&bb);
+
+						int block_pos = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
+						int record_pos = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+						
+						Record rr;
+
+						CALL_BF(BF_GetBlock(open_files[p2].fd , block_pos, bb));
+						char* d = BF_Block_GetData(bb);
+
+						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
+						
+						printf("id = %d , name = %s , surname = %s , city = %s \n", rr.id, rr.name, rr.surname, rr.city);
+
+						CALL_BF(BF_UnpinBlock(bb));
+					}
+				}
+
+				CALL_BF(BF_UnpinBlock(data_block2));
+				CALL_BF(BF_UnpinBlock(block2));
+
+				BF_Block_Destroy(&data_block2);
+				BF_Block_Destroy(&block2);
+
+	}
 
     return HT_OK;
 }

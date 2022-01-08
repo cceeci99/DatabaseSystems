@@ -326,7 +326,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		sz = 2 * sizeof(int) + no_records * sizeof(Record);
 		memcpy(data + sz, &record, sizeof(Record));
 
-		printf("\nInserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
+		// printf("\nInserting record id=%d, on data block %d on record pos %d\n",record.id, data_block_id, no_records);
 		*tupleId = data_block_id*BLOCK_CAP + no_records;	// no_records is the position of the record
 
 		// Update data block's number of records
@@ -613,8 +613,9 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		*updateArraySize = no_records;
 
 		open_files[indexDesc].split = 1;
-
+		
 		printf("\n");
+
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
 			int tuple;
@@ -632,7 +633,7 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 				temp[i].oldTupleId = old_tuple_ids[i];
 				temp[i].newTupleId = tuple;
 
-				printf("record with id=%d, surname=%s, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].surname, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
+				// printf("record with id=%d, surname=%s, city=%s, oldTupleId=%d, newTupleId=%d\n", records[i].id, temp[i].surname, temp[i].city, temp[i].oldTupleId, temp[i].newTupleId);
 			}
 
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
@@ -727,6 +728,8 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 		BF_Block_Destroy(&data_block);
 	}
 	else {
+		printf("Printing all records of primary hash file %s\n", open_files[indexDesc].filename);
+
 		BF_Block* block;
 		BF_Block_Init(&block);
 
