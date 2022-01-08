@@ -674,6 +674,8 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
 			if ( (strcmp(index_key, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
+				
+				printf("record index_key=%s, oldId=%d, newId=%d to change\n", record.index_key, updateArray[i].oldTupleId, updateArray[i].newTupleId);
 
 				if (record.tupleId != updateArray[i].newTupleId) {
 					// update the record's tupleId
@@ -684,7 +686,9 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 					
 					BF_Block_SetDirty(data_block);
 				}
+				break;
 			}		
+
 		}
 		CALL_BF(BF_UnpinBlock(data_block));
 
@@ -881,7 +885,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 counter++;
 				printf("\n");
 
-                CALL_BF(BF_UnpinBlock(b));
+                CALL_BF(BF_UnpinBlock(b));			
             }
         }
 
@@ -1067,16 +1071,12 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 		SecondaryRecord record;
 		size = 2*sizeof(int);
-
 		for (int i = 0; i < no_records; i++) {
 			// get the record
 			memcpy(&record, data + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
-
 			// find the record from the first secondary index
 			if ( strcmp(index_key, record.index_key) == 0 ) {
 				
-				printf("found record on 1st hash file\n");
-
 				BF_Block* b;
                 BF_Block_Init(&b);
 
@@ -1092,19 +1092,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 				Record r;
                 memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
 				
-				printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
-				
-				CALL_BF(BF_UnpinBlock(b));
-			}
-		}
-
-		CALL_BF(BF_UnpinBlock(data_block));
-        CALL_BF(BF_UnpinBlock(block));
-
- 		BF_Block_Destroy(&data_block);
-        BF_Block_Destroy(&block);
-		
-			// for secondary record r with index_key find matching records from the second file
+				// 	// for secondary record r with index_key find matching records from the second file
 
 				byte_string = hash_function(index_key);
 				msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
@@ -1157,8 +1145,6 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					// find the record from the first secondary index
 					if ( strcmp(index_key, record2.index_key) == 0 ) {
 						
-						printf("found record on second hash file\n");
-
 						BF_Block* bb;
 						BF_Block_Init(&bb);
 
@@ -1173,8 +1159,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
-						printf("id = %d , name = %s , surname = %s , city = %s \n", rr.id, rr.name, rr.surname, rr.city);
-
+						printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
+					
 						CALL_BF(BF_UnpinBlock(bb));
 					}
 				}
@@ -1185,6 +1171,16 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 				BF_Block_Destroy(&data_block2);
 				BF_Block_Destroy(&block2);
 
+				CALL_BF(BF_UnpinBlock(b));
+			}
+		}
+
+		CALL_BF(BF_UnpinBlock(data_block));
+        CALL_BF(BF_UnpinBlock(block));
+
+ 		BF_Block_Destroy(&data_block);
+        BF_Block_Destroy(&block);
+			
 	}
 
     return HT_OK;
