@@ -80,7 +80,7 @@
 ### HT_Init, SHT_Init:
 Επειδή η HT_Init αρχικοποιεί τον αδειο πίνακα open_files, η SHT_Init δεν χρειάζεται να κάνει καποια λειτουρία.
 
-###  HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRecordArray** updateArray, int *updateArraySize):
+###  HT_InsertEntry:
 
 Το πρότυπο της συνάρτησης εισαγωγής εγγραφής στο πρωτεύον ευρετήριο εχει τροποποιηθεί ως εξης:
 - αλλαγή του δεικτη σε δομη UpdateRecordArray σε διπλό, ώστε να ειναι δυνατή η τροποποιηση του πίνακα των δομων αυτών απο την συνάρτηση και η επιστροφή του στην συνάρτηση που την καλεί.
