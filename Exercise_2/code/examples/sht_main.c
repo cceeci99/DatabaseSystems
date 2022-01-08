@@ -262,21 +262,18 @@ int main() {
 
         printf("\n");
     }
-  
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, NULL));
+    
+    printf("\n");
+    
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
+    printf("\n");
+    
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, temp));
+    printf("\n");
+    
+    CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, temp));
     printf("\n");
 
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
-    // printf("\n");
-    // CALL_OR_DIE(HT_PrintAllEntries(pindexDesc2, NULL));
-    // printf("\n");
-  
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, NULL));
-    // printf("\n");
-
-    // CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, temp));
-
-  
     CALL_OR_DIE(HT_CloseFile(pindexDesc1));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc1));
 
