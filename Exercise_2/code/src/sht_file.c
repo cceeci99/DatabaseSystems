@@ -675,8 +675,6 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 			// linear search, untill you find matching record, on index_key and oldTupleId, and update if it's changed
 			if ( (strcmp(index_key, record.index_key) == 0) && (updateArray[i].oldTupleId == record.tupleId) ) {
 				
-				printf("record index_key=%s, oldId=%d, newId=%d to change\n", record.index_key, updateArray[i].oldTupleId, updateArray[i].newTupleId);
-
 				if (record.tupleId != updateArray[i].newTupleId) {
 					// update the record's tupleId
 					record.tupleId = updateArray[i].newTupleId;
@@ -1217,9 +1215,6 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
         BF_Block* data_block;
         BF_Block_Init(&data_block);
 
-        // int current_id = 0;
-        // int counter = 0;
-
         for (int i = 0; i < no_hash_blocks; i ++) {
             CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, hash_block_ids[i], block));
             char* hash_data = BF_Block_GetData(block);
@@ -1229,14 +1224,6 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
             for (int j = 0; j < limit; j++) {
                 int data_block_id;
                 memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
-
-                // To avoid printing same records because of buddies
-				// if (current_id != data_block_id) {
-				// 	current_id = data_block_id;
-				// }
-				// else {
-				// 	continue;
-				// }
 
                 CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, data_block_id, data_block));
                 char* data = BF_Block_GetData(data_block);
