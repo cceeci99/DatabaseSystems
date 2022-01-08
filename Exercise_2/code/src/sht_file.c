@@ -1016,15 +1016,13 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 
 
 HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
+	
 	// check first if secondary indexes are hashing on same index-key, if so return error
 	if (open_files[sindexDesc1].which_index_key != open_files[sindexDesc2].which_index_key) {
 		fprintf(stderr, "Secondary indexes must have same index_key");
 		return HT_ERROR;
 	}
 
-	int p1 = open_files[sindexDesc1].which_primary;
-	int p2 = open_files[sindexDesc2].which_primary;
-		
 	if (index_key != NULL) {
 		printf("Inner join on index_key=%s\n", index_key);
 		
@@ -1090,7 +1088,9 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 				
-			    CALL_BF(BF_GetBlock(open_files[p1].fd , block_pos, b));
+				int p = open_files[sindexDesc1].which_primary;
+				
+			    CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, b));
                 char* d = BF_Block_GetData(b);
 
 				// get primary record r
@@ -1170,11 +1170,12 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						int block_pos = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
 						int record_pos = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 						
-						Record rr;
+						int p = open_files[sindexDesc2].which_primary;
 
-						CALL_BF(BF_GetBlock(open_files[p2].fd , block_pos, bb));
+						CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
 						char* d = BF_Block_GetData(bb);
-
+					
+						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
 						printf("id = %d , name = %s , surname = %s , city = %s \n", rr.id, rr.name, rr.surname, rr.city);

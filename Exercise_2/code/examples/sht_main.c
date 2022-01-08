@@ -88,9 +88,10 @@ int main() {
     char* pfilename1 = "data.db";
     char* sfilename1 = "sdata.db";
 
-    char* index_key = "city";
+    // hash on surname
+    char* index_key = "surname";
 
-    int no_cities = 10;
+    int no_records = 23;
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
@@ -121,13 +122,13 @@ int main() {
 
     printf("\n");
     
-    for (int id = 0; id < 25; ++id) {
+    for (int id = 0; id < no_records; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
       r = rand() % 12;
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-      r = rand() % no_cities;
+      r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -173,8 +174,8 @@ int main() {
     printf("\n");
 
 
-    // CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
+    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
     
     // creating second primary hash file
     char* pfilename2 = "data2.db";
@@ -184,7 +185,6 @@ int main() {
     int pindexDesc2;
 	  CALL_OR_DIE(HT_OpenIndex(pfilename2, &pindexDesc2)); 
 
-    index_key = "city";
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename2, index_key, strlen(index_key), global_depth, pfilename2));
     int sindexDesc2;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename2, &sindexDesc2));
@@ -194,13 +194,13 @@ int main() {
 
     printf("\n");
 
-    for (int id = 0; id < 25; ++id) {
+    for (int id = 0; id < no_records; ++id) {
       record.id = id;
       r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
       r = rand() % 12;
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-      r = rand() % no_cities;
+      r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -244,8 +244,8 @@ int main() {
     printf("\n");
 
 
-    // CALL_OR_DIE(HT_PrintAllEntries(pindexDesc2, NULL));
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, NULL));
+    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc2, NULL));
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, NULL));
 
     CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, temp));
 
