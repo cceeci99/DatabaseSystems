@@ -1022,8 +1022,16 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 		return HT_ERROR;
 	}
 
+	char* which_key;
+	if (open_files[sindexDesc1].which_index_key == 'c') {
+		which_key = "city";
+	}
+	else{
+		which_key = "surname";
+	}
+
 	if (index_key != NULL) {
-		printf("Inner join on index_key=%s\n", index_key);
+		printf("Inner join on %s= %s\n", which_key, index_key);
 		
 		char* byte_string = hash_function(index_key);
 		char* msb = malloc((open_files[sindexDesc1].depth + 1)*sizeof(char));
@@ -1159,7 +1167,12 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
-						printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
+						if (strcmp(which_key, "city")==0){
+							printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+						}
+						else {
+							printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+						}
 					
 						CALL_BF(BF_UnpinBlock(bb));
 					}
@@ -1181,6 +1194,173 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
  		BF_Block_Destroy(&data_block);
         BF_Block_Destroy(&block);
 			
+	}
+	else {
+		// since index_key is NULL print the join for every one record of the first file
+		BF_Block* block;
+        BF_Block_Init(&block);
+
+        CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, 0, block));
+        char* metadata = BF_Block_GetData(block);
+
+        int no_hash_blocks = open_files[sindexDesc1].no_hash_blocks;
+        int* hash_block_ids = malloc(no_hash_blocks*sizeof(int));
+
+        size_t size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
+
+        for (int i = 0; i < no_hash_blocks; i++) {
+            memcpy(&hash_block_ids[i], metadata + size + i*sizeof(int), sizeof(int));
+        }
+
+        CALL_BF(BF_UnpinBlock(block));
+
+        BF_Block* data_block;
+        BF_Block_Init(&data_block);
+
+        // int current_id = 0;
+        // int counter = 0;
+
+        for (int i = 0; i < no_hash_blocks; i ++) {
+            CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, hash_block_ids[i], block));
+            char* hash_data = BF_Block_GetData(block);
+
+            int limit = no_hash_blocks == 1 ? open_files[sindexDesc1].no_buckets : HASH_CAP;
+
+            for (int j = 0; j < limit; j++) {
+                int data_block_id;
+                memcpy(&data_block_id, hash_data + j*sizeof(int), sizeof(int));
+
+                // To avoid printing same records because of buddies
+				// if (current_id != data_block_id) {
+				// 	current_id = data_block_id;
+				// }
+				// else {
+				// 	continue;
+				// }
+
+                CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, data_block_id, data_block));
+                char* data = BF_Block_GetData(data_block);
+
+                int no_records;
+                memcpy(&no_records, data + 1*sizeof(int), sizeof(int));
+
+                SecondaryRecord record;
+                size = 2*sizeof(int);
+
+                for (int k = 0; k < no_records; k++) {
+                    memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
+                    BF_Block* b;
+                    BF_Block_Init(&b);
+
+                    int block_pos = record.tupleId / BLOCK_CAP;
+                    int record_pos = record.tupleId % BLOCK_CAP;
+					
+					int p = open_files[sindexDesc1].which_primary;
+
+					CALL_BF(BF_GetBlock(open_files[p].fd, block_pos, b));
+                    char* d = BF_Block_GetData(b);
+
+                    Record r;
+                    memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
+				
+					// printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
+				
+					char* byte_string = hash_function(record.index_key);
+					char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
+
+					for (int i = 0; i < open_files[sindexDesc2].depth; i++) {
+						msb[i] = byte_string[i];
+					}
+
+					msb[open_files[sindexDesc2].depth] = '\0';
+
+					char* tmp;
+					int bucket = strtol(msb, &tmp, 2);
+					free(msb);
+
+					int hash_block_index = bucket / HASH_CAP;
+					int hash_block_pos = bucket % HASH_CAP;
+
+					BF_Block* block2;
+					BF_Block_Init(&block2);
+
+					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, 0, block2));
+					metadata = BF_Block_GetData(block2);
+
+					size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
+					
+					int actual_hash_block_id;
+					memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+
+					CALL_BF(BF_UnpinBlock(block2));
+
+					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
+					hash_data = BF_Block_GetData(block2);
+
+					memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+
+					BF_Block* data_block2;
+					BF_Block_Init(&data_block2);
+
+					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
+					char* data2 = BF_Block_GetData(data_block2);
+
+					no_records;
+					memcpy(&no_records, data2 + 1*sizeof(int), sizeof(int));
+
+					SecondaryRecord record2;
+					size = 2*sizeof(int);
+
+					for (int i = 0; i < no_records; i++) {
+						// get the record
+						memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
+						// find the record from the first secondary index
+						if ( strcmp(record.index_key, record2.index_key) == 0 ) {
+							
+							BF_Block* bb;
+							BF_Block_Init(&bb);
+
+							int block_pos = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
+							int record_pos = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+							
+							int p = open_files[sindexDesc2].which_primary;
+
+							CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
+							char* d = BF_Block_GetData(bb);
+						
+							Record rr;
+							memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
+							
+							if (strcmp(which_key, "city")==0){
+								printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n", record.index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
+							}
+							else {
+								printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n", record.index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+							}
+						
+							CALL_BF(BF_UnpinBlock(bb));
+						}
+					}
+
+					CALL_BF(BF_UnpinBlock(data_block2));
+					CALL_BF(BF_UnpinBlock(block2));
+
+					BF_Block_Destroy(&data_block2);
+					BF_Block_Destroy(&block2);
+
+					CALL_BF(BF_UnpinBlock(b));
+                }
+                CALL_BF(BF_UnpinBlock(data_block));
+            }
+            CALL_BF(BF_UnpinBlock(block));
+        }
+
+        free(hash_block_ids);
+
+	    BF_Block_Destroy(&block);
+	    BF_Block_Destroy(&data_block);
 	}
 
     return HT_OK;
