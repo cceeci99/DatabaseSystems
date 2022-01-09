@@ -6,54 +6,54 @@
 #include "bf.h"
 #include "hash_file.h"
 
-// const char* names[] = {
-//   "Yannis",
-//   "Christofos",
-//   "Sofia",
-//   "Marianna",
-//   "Vagelis",
-//   "Maria",
-//   "Iosif",
-//   "Dionisis",
-//   "Konstantina",
-//   "Theofilos",
-//   "Giorgos",
-//   "Dimitris"
-// };
+const char* names[] = {
+  "Yannis",
+  "Christofos",
+  "Sofia",
+  "Marianna",
+  "Vagelis",
+  "Maria",
+  "Iosif",
+  "Dionisis",
+  "Konstantina",
+  "Theofilos",
+  "Giorgos",
+  "Dimitris"
+};
 
-// const char* surnames[] = {
-//   "Ioannidis",
-//   "Svingos",
-//   "Karvounari",
-//   "Rezkalla",
-//   "Nikolopoulos",
-//   "Berreta",
-//   "Koronis",
-//   "Gaitanis",
-//   "Oikonomou",
-//   "Mailis",
-//   "Michas",
-//   "Halatsis"
-// };
+const char* surnames[] = {
+  "Ioannidis",
+  "Svingos",
+  "Karvounari",
+  "Rezkalla",
+  "Nikolopoulos",
+  "Berreta",
+  "Koronis",
+  "Gaitanis",
+  "Oikonomou",
+  "Mailis",
+  "Michas",
+  "Halatsis"
+};
 
-// const char* cities[] = {
-//   "Athens",
-//   "San Francisco",
-//   "Los Angeles",
-//   "Amsterdam",
-//   "London",
-//   "New York",
-//   "Tokyo",
-//   "Hong Kong",
-//   "Munich",
-//   "Miami"
-// };
+const char* cities[] = {
+  "Athens",
+  "San Francisco",
+  "Los Angeles",
+  "Amsterdam",
+  "London",
+  "New York",
+  "Tokyo",
+  "Hong Kong",
+  "Munich",
+  "Miami"
+};
 
-char names[500][50];
+// char names[500][50];
 
-char surnames[500][50];
+// char surnames[500][50];
 
-char cities[300][50];
+// char cities[300][50];
 
 
 #define CALL_OR_DIE(call)     \
@@ -65,60 +65,60 @@ char cities[300][50];
     }                         \
   }
 
-void readRecords(){
-    char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/cities.txt";
-    FILE *file = fopen(file_name, "r");
+// void readRecords(){
+//     char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/cities.txt";
+//     FILE *file = fopen(file_name, "r");
 
-    if ( file == NULL ){
-        printf("Could not open file with name: '%s' \n", file_name);
-        exit(EXIT_FAILURE);
-    }
+//     if ( file == NULL ){
+//         printf("Could not open file with name: '%s' \n", file_name);
+//         exit(EXIT_FAILURE);
+//     }
     
-    char line[50];
-    int i=0;
-    while ( fgets(line, 50, file) != NULL ){
-        memcpy(cities[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-        i++;
-    }
-    fclose(file);
+//     char line[50];
+//     int i=0;
+//     while ( fgets(line, 50, file) != NULL ){
+//         memcpy(cities[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
+//         i++;
+//     }
+//     fclose(file);
 
-    file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/names.txt";
-    file = fopen(file_name, "r");
+//     file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/names.txt";
+//     file = fopen(file_name, "r");
 
-    if ( file == NULL ){
-        printf("Could not open file with name: '%s' \n", file_name);
-        exit(EXIT_FAILURE);
-    }
+//     if ( file == NULL ){
+//         printf("Could not open file with name: '%s' \n", file_name);
+//         exit(EXIT_FAILURE);
+//     }
     
-    i=0;
-    while ( fgets(line, 50, file) != NULL ){
-        memcpy(names[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-        i++;
-    }
-    fclose(file);  
+//     i=0;
+//     while ( fgets(line, 50, file) != NULL ){
+//         memcpy(names[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
+//         i++;
+//     }
+//     fclose(file);  
 
-    file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/surnames.txt";
-    file = fopen(file_name, "r");
+//     file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/surnames.txt";
+//     file = fopen(file_name, "r");
 
-    if ( file == NULL ){
-        printf("Could not open file with name: '%s' \n", file_name);
-        exit(EXIT_FAILURE);
-    }
+//     if ( file == NULL ){
+//         printf("Could not open file with name: '%s' \n", file_name);
+//         exit(EXIT_FAILURE);
+//     }
     
-    i=0;
-    while ( fgets(line, 50, file) != NULL ){
-        memcpy(surnames[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-        i++;
-    }
-    fclose(file);  
-}
+//     i=0;
+//     while ( fgets(line, 50, file) != NULL ){
+//         memcpy(surnames[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
+//         i++;
+//     }
+//     fclose(file);  
+// }
 
 int main() {
 
     BF_Init(LRU);
     
     // read_cities();
-    readRecords();
+    // readRecords();
 
     // creating first primary hash file
     char* pfilename1 = "data.db";
@@ -127,7 +127,7 @@ int main() {
     // hash on surname
     char* index_key = "surname";
 
-    int no_records = 1000;
+    int no_records = 10;
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
@@ -154,15 +154,14 @@ int main() {
     int tupleId;
     int tempid;
     
-    char temp[30];
 
     for (int id = 0; id < no_records; ++id) {
       record.id = id;
-      r = rand() % 500;
+      r = rand() % 12;
       memcpy(record.name, names[r], strlen(names[r]) + 1);
-      r = rand() % 500;
+      r = rand() % 12;
       memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-      r = rand() % 300;
+      r = rand() % 10;
       memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
       printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -220,11 +219,11 @@ int main() {
 
     for (int id = 0; id < no_records; ++id) {
         record.id = id;
-        r = rand() % 500;
+        r = rand() % 12;
         memcpy(record.name, names[r], strlen(names[r]) + 1);
-        r = rand() % 500;
+        r = rand() % 12;
         memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-        r = rand() % 300;
+        r = rand() % 10;
         memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
         printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -247,11 +246,11 @@ int main() {
         
         if (index_key == "city") {
             memcpy(srecord.index_key, record.city, sizeof(char)*(strlen(record.city)+1));
-            memcpy(&temp, record.city, sizeof(char)*(strlen(record.city)+1));
+            // memcpy(&temp, record.city, sizeof(char)*(strlen(record.city)+1));
         }
         else if (index_key == "surname") {
             memcpy(srecord.index_key, record.surname, sizeof(char)*(strlen(record.surname)+1));
-            memcpy(&temp, record.surname, sizeof(char)*(strlen(record.surname)+1));
+            // memcpy(&temp, record.surname, sizeof(char)*(strlen(record.surname)+1));
         }
         else {
             fprintf(stderr, "not available index_key for secondary index\n");
@@ -265,13 +264,28 @@ int main() {
     
     printf("\n");
     
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
-    printf("\n");
+    char temp[30];
+
+    if (strcmp(index_key, "city") == 0) {
+        r = rand() % 10;
+        memcpy(&temp, cities[r], sizeof(char)*(strlen(cities[r])+1)); 
+    }
+    else if (strcmp(index_key, "surname") == 0){
+        r = rand() % 12;
+        memcpy(&temp, surnames[r], sizeof(char)*(strlen(surnames[r])+1)); 
+    }
+    else {
+        fprintf(stderr, "not available index_key\n");
+        return HT_ERROR;
+    }
+
+    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
+    // printf("\n");
     
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, temp));
-    printf("\n");
+    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, temp));
+    // printf("\n");
     
-    CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, temp));
+    CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, NULL));
     printf("\n");
 
     CALL_OR_DIE(HT_CloseFile(pindexDesc1));

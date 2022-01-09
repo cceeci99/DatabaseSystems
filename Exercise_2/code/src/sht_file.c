@@ -1273,7 +1273,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					BF_Block_Init(&block2);
 
 					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, 0, block2));
-					metadata = BF_Block_GetData(block2);
+					char* metadata = BF_Block_GetData(block2);
 
 					size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
 					
@@ -1283,8 +1283,9 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					CALL_BF(BF_UnpinBlock(block2));
 
 					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
-					hash_data = BF_Block_GetData(block2);
+					char* hash_data = BF_Block_GetData(block2);
 
+					int data_block_id;
 					memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
 
 					BF_Block* data_block2;
