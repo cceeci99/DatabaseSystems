@@ -706,15 +706,17 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 		return HT_ERROR;
 	}
 
-    if (index_key == NULL) {
-		char* which_key;
-		if (open_files[sindexDesc].which_index_key == 'c') {
-			which_key = "city";
-		}
-		else{
-			which_key = "surname";
-		}
-        printf("Printing all records of secondary index hash file %s with index_key=%s\n", open_files[sindexDesc].filename, which_key);
+	char* which_key;
+	if (open_files[sindexDesc].which_index_key == 'c') {
+		which_key = "city";
+	}
+	else{
+		which_key = "surname";
+	}
+    
+	if (index_key == NULL) {
+	
+        printf("Printing all records from secondary index hash file %s with index_key = %s\n", open_files[sindexDesc].filename, which_key);
 
         BF_Block* block;
         BF_Block_Init(&block);
@@ -807,7 +809,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
     }
     else{
-        printf("Printing records with index key= %s from secondary index hash file %s\n", index_key, open_files[sindexDesc].filename);
+        printf("Printing records with index key: %s = %s from secondary index hash file %s\n", which_key, index_key, open_files[sindexDesc].filename);
 
         char* byte_string = hash_function(index_key);
 
@@ -888,7 +890,7 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         }
 
         if (counter == 0) {
-            printf("No records found with index_key=%s\n", index_key);
+            printf("No records found with %s = %s\n", which_key, index_key);
         }
         
         CALL_BF(BF_UnpinBlock(data_block));
@@ -1024,12 +1026,17 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 	if (open_files[sindexDesc1].which_index_key == 'c') {
 		which_key = "city";
 	}
-	else{
+	else if (open_files[sindexDesc1].which_index_key == 's'){
 		which_key = "surname";
+	}
+	else {
+		fprintf(stderr, "not available index key\n");
+		return HT_ERROR;
 	}
 
 	if (index_key != NULL) {
-		printf("Inner join on %s= %s\n", which_key, index_key);
+		printf("Inner join on %s = %s\n", which_key, index_key);
+		int joins = 0;
 		
 		char* byte_string = hash_function(index_key);
 		char* msb = malloc((open_files[sindexDesc1].depth + 1)*sizeof(char));
@@ -1150,7 +1157,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 					// find the record from the first secondary index
 					if ( strcmp(index_key, record2.index_key) == 0 ) {
-						
+						joins++;
+
 						BF_Block* bb;
 						BF_Block_Init(&bb);
 
@@ -1165,11 +1173,15 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
-						if (strcmp(which_key, "city")==0){
+						if (strcmp(which_key, "city") == 0){
 							printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
 						}
-						else {
+						else if (strcmp(which_key, "surname") == 0) {
 							printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+						}
+						else {
+							fprintf(stderr, "not available index key\n");
+							return HT_ERROR;
 						}
 					
 						CALL_BF(BF_UnpinBlock(bb));
@@ -1186,14 +1198,20 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 			}
 		}
 
+		if (joins == 0) {
+			printf("Inner Join is empty\n");
+		}
+
 		CALL_BF(BF_UnpinBlock(data_block));
         CALL_BF(BF_UnpinBlock(block));
 
  		BF_Block_Destroy(&data_block);
         BF_Block_Destroy(&block);
-			
+	
 	}
 	else {
+		int joins = 0;
+
 		// since index_key is NULL print the join for every one record of the first file
 		BF_Block* block;
         BF_Block_Init(&block);
@@ -1251,8 +1269,6 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                     Record r;
                     memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
 				
-					// printf("id = %d , name = %s , surname = %s , city = %s \n", r.id, r.name, r.surname, r.city);
-				
 					char* byte_string = hash_function(record.index_key);
 					char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
 
@@ -1306,7 +1322,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 						// find the record from the first secondary index
 						if ( strcmp(record.index_key, record2.index_key) == 0 ) {
-							
+							joins++;
+
 							BF_Block* bb;
 							BF_Block_Init(&bb);
 
@@ -1324,8 +1341,12 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 							if (strcmp(which_key, "city")==0){
 								printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n", record.index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
 							}
-							else {
+							else if (strcmp(which_key, "surname") == 0) {
 								printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n", record.index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+							}
+							else {
+								fprintf(stderr, "not available index-key\n");
+								return HT_ERROR;
 							}
 						
 							CALL_BF(BF_UnpinBlock(bb));
@@ -1344,6 +1365,10 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
             }
             CALL_BF(BF_UnpinBlock(block));
         }
+		
+		if (joins == 0) {
+			printf("Inner Join is empty\n");
+		}
 
         free(hash_block_ids);
 
