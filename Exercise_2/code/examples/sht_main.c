@@ -65,6 +65,7 @@ char cities[300][50];
     }                         \
   }
 
+// read and store names, surnames and cities from .txt files to char* arrays
 void read_data(){
     char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/cities.txt";
     FILE *file = fopen(file_name, "r");
@@ -126,7 +127,7 @@ int main() {
     // hash on surname
     char* index_key = "surname";
 
-    int no_records = 565;
+    int no_records = 150;
     int global_depth = 2;
 
     CALL_OR_DIE(HT_Init());
@@ -134,7 +135,6 @@ int main() {
     CALL_OR_DIE(HT_CreateIndex(pfilename1, global_depth));
     int pindexDesc1;
 	CALL_OR_DIE(HT_OpenIndex(pfilename1, &pindexDesc1)); 
-
 
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename1, index_key, strlen(index_key), global_depth, pfilename1));
     int sindexDesc1;
@@ -146,57 +146,56 @@ int main() {
     Record record;
     srand(time(NULL));
     int r;
-    
+
+    int tupleId;    
     UpdateRecordArray* updateArray;
     int updateArraySize;
     
-    int tupleId;
-    int tempid;
-    
-
     for (int id = 0; id < no_records; ++id) {
-      record.id = id;
-      r = rand() % 500;
-      memcpy(record.name, names[r], strlen(names[r]) + 1);
-      r = rand() % 500;
-      memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-      r = rand() % 300;
-      memcpy(record.city, cities[r], strlen(cities[r]) + 1);
+        record.id = id;
+        r = rand() % 500;
+        memcpy(record.name, names[r], strlen(names[r]) + 1);
+        r = rand() % 500;
+        memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
+        r = rand() % 300;
+        memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
-      printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
-      CALL_OR_DIE(HT_InsertEntry(pindexDesc1, record, &tupleId, &updateArray, &updateArraySize));
-      
-      if (open_files[pindexDesc1].split == 1) {
+        printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
+        CALL_OR_DIE(HT_InsertEntry(pindexDesc1, record, &tupleId, &updateArray, &updateArraySize));
+        
+        if (open_files[pindexDesc1].split == 1) {
 
-          for (int k = 0; k < MAX_OPEN_FILES; k++) {
+            for (int k = 0; k < MAX_OPEN_FILES; k++) {
 
-              if (open_files[k].index_type == 0 && open_files[k].which_primary == pindexDesc1) {  // only for secondary index files with corresponding primary index file...
-               
-                  SHT_SecondaryUpdateEntry(open_files[k].fd, updateArray, updateArraySize);
-              }
-          }
-          open_files[pindexDesc1].split = 0;
-          free(updateArray);
-      }
+                if (open_files[k].index_type == 0 && open_files[k].which_primary == pindexDesc1) {  // only for secondary index files with corresponding primary index file...
+                
+                    SHT_SecondaryUpdateEntry(open_files[k].fd, updateArray, updateArraySize);
+                }
+            }
+            open_files[pindexDesc1].split = 0;
+            free(updateArray);
+        }
 
-      SecondaryRecord srecord;
-      memcpy(&srecord.tupleId, &tupleId, sizeof(int));      
-      
-      if (index_key == "city") {
-          memcpy(srecord.index_key, record.city, sizeof(char)*(strlen(record.city)+1));
-      }
-      else if (index_key == "surname") {
-          memcpy(srecord.index_key, record.surname, sizeof(char)*(strlen(record.surname)+1));
-      }
-      else {
-          fprintf(stderr, "not available index_key for secondary index\n");
-          return HT_ERROR;
-      }
+        SecondaryRecord srecord;
+        memcpy(&srecord.tupleId, &tupleId, sizeof(int));      
+        
+        if (index_key == "city") {
+            memcpy(srecord.index_key, record.city, sizeof(char)*(strlen(record.city)+1));
+        }
+        else if (index_key == "surname") {
+            memcpy(srecord.index_key, record.surname, sizeof(char)*(strlen(record.surname)+1));
+        }
+        else {
+            fprintf(stderr, "not available index_key for secondary index\n");
+            return HT_ERROR;
+        }
 
-      CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc1, srecord));
-     
-      printf("\n");
+        CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc1, srecord));
+
+        printf("\n");
     }
+
+    printf("\n");
 
     // // creating second primary hash file
     char* pfilename2 = "data2.db";
@@ -258,7 +257,7 @@ int main() {
     }
     
     printf("\n");
-    
+
     char temp[30];
 
     if (strcmp(index_key, "city") == 0) {
@@ -273,6 +272,7 @@ int main() {
         fprintf(stderr, "not available index_key\n");
         return HT_ERROR;
     }
+
 
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
     printf("\n");
