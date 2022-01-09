@@ -117,4 +117,4 @@
 
 
 Αν το πεδιο index_key είναι NULL, εκτελείται σειριακά η ιδια διαδικασία με την διαφορά οτι ως index_key λαμβάνεται καθε φορά το index_key απο τo κάθε record του δευτερεύοντος ευρετηρίου για το πρώτο αρχείο. Ετσι εκτυπώνονται σε διαφορετικες γραμμές όλες οι δυνατές ζεύξεις σε καποιο πεδίο για τα δύο αρχεία όπως στην παρακάτω εικόνα. 
-<img width="715" alt="Screenshot 2022-01-09 at 16 02 32" src="https://user-images.githubusercontent.com/61785341/148686490-7435c54b-aeb9-40dd-a63a-2a467150404f.png">
+<img width="718" alt="Screenshot 2022-01-09 at 16 26 13" src="https://user-images.githubusercontent.com/61785341/148686566-ca65f50d-3ee8-420b-a60e-76c4a2f928f3.png">
