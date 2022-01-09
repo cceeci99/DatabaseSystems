@@ -1109,8 +1109,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                 memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
 				
 				// find secondary record from second file, by hashing the index_key
-				byte_string = hash_function(index_key);
-				msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
+				char* byte_string = hash_function(index_key);
+				char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
 
 				for (int i = 0; i < open_files[sindexDesc2].depth; i++) {
 					msb[i] = byte_string[i];
@@ -1118,28 +1118,29 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 				msb[open_files[sindexDesc2].depth] = '\0';
 
-				bucket = strtol(msb, &tmp, 2);
+				char* tmp;
+				int bucket = strtol(msb, &tmp, 2);
 				free(msb);
 
-				hash_block_index = bucket / HASH_CAP;
-				hash_block_pos = bucket % HASH_CAP;
+				int hash_block_index = bucket / HASH_CAP;
+				int hash_block_pos = bucket % HASH_CAP;
 
 				BF_Block* block2;
 				BF_Block_Init(&block2);
 
 				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, 0, block2));
-				metadata = BF_Block_GetData(block2);
+				char* metadata2 = BF_Block_GetData(block2);
 
 				size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
 
-				memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+				memcpy(&actual_hash_block_id, metadata2 + size + hash_block_index*sizeof(int), sizeof(int));
 
 				CALL_BF(BF_UnpinBlock(block2));
 
 				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
-				hash_data = BF_Block_GetData(block2);
+				char* hash_data2 = BF_Block_GetData(block2);
 
-				memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+				memcpy(&data_block_id, hash_data2 + hash_block_pos*sizeof(int), sizeof(int));
 
 				BF_Block* data_block2;
 				BF_Block_Init(&data_block2);
@@ -1147,13 +1148,13 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
 				char* data2 = BF_Block_GetData(data_block2);
 
-				no_records;
-				memcpy(&no_records, data2 + 1*sizeof(int), sizeof(int));
+				int no_records2;
+				memcpy(&no_records2, data2 + 1*sizeof(int), sizeof(int));
 
 				SecondaryRecord record2;
 				size = 2*sizeof(int);
 
-				for (int i = 0; i < no_records; i++) {
+				for (int i = 0; i < no_records2; i++) {
 
 					memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 

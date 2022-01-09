@@ -12,14 +12,14 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 500
-#define GLOBAL_DEPTH 4
-#define INDEX_KEY "surname"
+#define NO_RECORDS 30
+#define GLOBAL_DEPTH 2
+#define INDEX_KEY "city"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
-#define NO_NAMES 300
-#define NO_SURNAMES 300
-#define NO_CITIES 200
+#define NO_NAMES 20
+#define NO_SURNAMES 20
+#define NO_CITIES 20
 
 
 #define CALL_OR_DIE(call)     \
