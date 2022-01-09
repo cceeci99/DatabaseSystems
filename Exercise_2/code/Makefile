@@ -8,7 +8,7 @@ bf:
 
 sht:
 	@echo " Compile ht_main ...";
-	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/sht_main.c ./src/hash_file.c ./src/sht_file.c -lbf -o ./build/runner -O2
+	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/main.c ./src/hash_file.c ./src/sht_file.c -lbf -o ./build/runner -O2
 
 all:
 	./run.sh
@@ -20,4 +20,4 @@ time:
 	time ./build/runner 
 
 clean:
-	rm -f ./build/runner *.db
+	rm -f ./build/runner  files/hash_files/*.db files/logs/*.txt *.db

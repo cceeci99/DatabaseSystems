@@ -2,14 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #include "bf.h"
 #include "hash_file.h"
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 50
-#define GLOBAL_DEPTH 2
+#define NO_RECORDS 100
+#define GLOBAL_DEPTH 3
 #define INDEX_KEY "surname"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
@@ -29,6 +32,33 @@
   
 
 int main() {
+    char no_rec[10];
+    sprintf(no_rec, "%d", NO_RECORDS);
+
+    char depth[10];
+    sprintf(depth, "%d", GLOBAL_DEPTH);
+
+    char* text = "files/logs/result_";
+	char* results = malloc((strlen(no_rec) + strlen(depth) + strlen(text) + 6) * sizeof(char));
+	results[0] = '\0';
+	strcat(results, text);
+	strcat(results, no_rec);
+	text = "_";
+	strcat(results, text);
+	strcat(results, depth);
+	text = ".txt";
+	strcat(results, text);
+
+    int fd = open(results, O_CREAT | O_WRONLY, 0644);
+	if (fd == -1) {
+		perror("open() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	setbuf(stdout, NULL);
+	setbuf(stderr, NULL);
+	dup2(fd, STDOUT_FILENO);
+	dup2(fd, STDERR_FILENO);
 
     BF_Init(LRU);
 
@@ -38,13 +68,43 @@ int main() {
 
     CALL_OR_DIE(HT_Init());
     
+    printf("CREATE FIRST PRIMARY HASH FILE\n");
+    for (int i = 0; i < 150; i++){
+        printf("-");
+    }
+    printf("\n");
+    
     CALL_OR_DIE(HT_CreateIndex(pfilename1, GLOBAL_DEPTH));
+    printf("\n");
+    
+    printf("\nOPEN FIRST PRIMARY HASH FILE\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+    printf("\n");
+    
     int pindexDesc1;
 	CALL_OR_DIE(HT_OpenIndex(pfilename1, &pindexDesc1)); 
-
+    printf("\n");
+    
+    printf("CREATE SECONDARY HASH FILE\n");
+    for (int i = 0; i < 150; i++){
+        printf("-");
+    }
+    printf("\n");
+    
     CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename1, INDEX_KEY, strlen(INDEX_KEY)+1, GLOBAL_DEPTH, pfilename1));
+    printf("\n");
+
+    printf("\nOPEN SECONDARY HASH FILE\n");
+	for (int i = 0; i < 150; i++) { 
+		printf("-");
+	}
+    printf("\n");
+
     int sindexDesc1;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename1, &sindexDesc1));
+    printf("\n");
 
     // set the corresponding primary' s position in open_files
     open_files[sindexDesc1].which_primary = pindexDesc1;
@@ -52,6 +112,12 @@ int main() {
     Record record;
     srand(time(NULL));
     int r;
+    
+    printf("\nINSERT ENTRIES\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
 
     int tupleId;    
     UpdateRecordArray* updateArray;
@@ -104,16 +170,28 @@ int main() {
 
     printf("\n");
 
-    // print all entries from 1st primary hash file
-    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
-    printf("\n");
+	// Print entries
+	printf("\nPRINT ENTRIES\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
 
-    // print random record from 1st primary hash file
-    int id = rand() % NO_RECORDS;
-    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, &id));
-    printf("\n");
+	int id = rand() % NO_RECORDS;
+	printf("- For id %d :\n", id);
+	CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, &id));	
+	printf("\n- For all entries :\n");
+	CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
+	printf("\n");
+
+    printf("\nPRINT ENTRIES\n");
+	for (int i = 0; i < 150; i++) {
+		printf("-");
+	}
+	printf("\n");
 
     // print all records from 1st secondary index hash file
+    printf("\n- For all entries :\n");
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
     printf("\n");
 
@@ -131,10 +209,10 @@ int main() {
         fprintf(stderr, "not available index_key\n");
         return HT_ERROR;
     }
+    printf("- For %s = %s\n", INDEX_KEY, temp);
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
     printf("\n");
     
-   
     // creating second primary hash file
     char* pfilename2 = "data2.db";
     char* sfilename2 = "sdata2.db";

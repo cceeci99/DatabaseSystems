@@ -4,15 +4,15 @@ make clean > /dev/null
 
 printf "Running ...\n\n"
 
-for no_records in 10 100 500 1000;
-do
-    for depth in 1 2 3 4 5 6 7 8 9 10 11 12 13; # max depth for block size 512 is 13
-    do
-        make ht > /dev/null
-        ./build/runner files/hash_files/data.db $no_records $depth
-        rm ./build/runner files/hash_files/data.db > /dev/null
-    done
-done
+# for no_records in 10 100 500 1000;
+# do
+#     for depth in 1 2 3 4 5 6 7 8 9 10 11 12 13; # max depth for block size 512 is 13
+#     do
+#         make sht > /dev/null
+#         ./build/runner  $no_records $depth
+#         rm ./build/runner *.db > /dev/null
+#     done
+# done
 
 cd ./files/logs
 
