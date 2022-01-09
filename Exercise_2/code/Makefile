@@ -14,10 +14,10 @@ all:
 	./run.sh
 
 run:
-	./build/runner files/hash_files/data.db
+	./build/runner 
 
 time:
-	time ./build/runner files/hash_files/data.db
+	time ./build/runner 
 
 clean:
-	rm -f ./build/runner files/hash_files/*.db files/logs/*.txt *.db
+	rm -f ./build/runner *.db
