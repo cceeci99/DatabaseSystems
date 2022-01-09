@@ -12,14 +12,14 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 30
+#define NO_RECORDS 10
 #define GLOBAL_DEPTH 2
-#define INDEX_KEY "city"
+#define INDEX_KEY "surname"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
-#define NO_NAMES 20
-#define NO_SURNAMES 20
-#define NO_CITIES 20
+#define NO_NAMES 12
+#define NO_SURNAMES 12
+#define NO_CITIES 10
 
 
 #define CALL_OR_DIE(call)     \
@@ -155,7 +155,7 @@ int main() {
                 for (int k = 0; k < MAX_OPEN_FILES; k++) {
 
                     if (open_files[k].index_type == 0 && open_files[k].which_primary == pindexDesc) {  // only for secondary index files with corresponding primary index file...
-                    
+
                         SHT_SecondaryUpdateEntry(open_files[k].fd, updateArray, updateArraySize);
                     }
                 }
@@ -226,7 +226,24 @@ int main() {
         CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, key));
         
         printf("\n");
+        
+        printf("PRINT STATISTICS FOR PRIMARY INDEX FILE\n");
+        for (int i=0; i < 100; i++){
+            printf("-");
+        }
+        printf("\n");
 
+        CALL_OR_DIE(HashStatistics(pfiles[f]));
+        printf("\n");
+        
+        printf("PRINT STATISTICS FOR SECONDARY INDEX FILE\n");
+        for (int i=0; i < 100; i++){
+            printf("-");
+        }
+        printf("\n");
+
+        CALL_OR_DIE(SHT_HashStatistics(sfiles[f]));
+        printf("\n");
     }
 
     int r;
@@ -244,20 +261,33 @@ int main() {
         return HT_ERROR;
     }
   
-    for (int i = 0; i < 150; i++){
+    printf("\nRUN INNER JOIN FOR SPECIFIC INDEX_KEY\n");
+    for (int i = 0; i < 100; i++) {
         printf("-");
     }
     printf("\n");
-  
+    
+    printf("\nRECORDS FROM FIRST FILE WITH INDEX_KEY %s\n", key);
+    for (int i = 0; i < 100; i++) {
+        printf("-");
+    }
+    printf("\n");
+
     // print secondary indexes of 2 hash files 
     CALL_OR_DIE(SHT_PrintAllEntries(sindexes[0], key));
     printf("\n");
     
+    printf("\nRECORDS FROM SECOND FILE WITH INDEX_KEY %s\n", key);
+    for (int i = 0; i < 100; i++) {
+        printf("-");
+    }
+    printf("\n");
+
     CALL_OR_DIE(SHT_PrintAllEntries(sindexes[1], key));
     printf("\n");
     
     // Test InnerJoin on random index_key = temp
-    printf("\nTEST INNER JOIN\n");
+    printf("\nINNER JOIN RESULT\n");
     for (int i = 0; i < 150; i++){
         printf("-");
     }
@@ -265,7 +295,34 @@ int main() {
     
     CALL_OR_DIE(SHT_InnerJoin(sindexes[0], sindexes[1], key));
     printf("\n");
+
+    printf("\nRUN INNER JOIN FOR INDEX_KEY = NULL\n");
+    for (int i = 0; i < 150; i++){
+            printf("-");
+        }
+    printf("\n");
+    
+    CALL_OR_DIE(SHT_InnerJoin(sindexes[0], sindexes[1], NULL));
+
+	// Close file
+	printf("\nCLOSE ALL HASH FILES\n");
+	for (int i = 0; i < 50; i++) {
+		printf("-");
+	}
+    printf("\n");
+
+    CALL_OR_DIE(HT_CloseFile(pindexes[0]));
+    printf("\n");
    
+    CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexes[0]));
+    printf("\n");
+    
+    CALL_OR_DIE(HT_CloseFile(pindexes[1]));
+    printf("\n"); 
+
+    CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexes[1]));
+    printf("\n");
+
     BF_Close();
 
     return 0;

@@ -804,6 +804,8 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 
 
 HT_ErrorCode HashStatistics(char* filename) {
+	printf("Printing statistics for primary index hash file %s\n", filename);
+	
 	int fd;
 	CALL_BF(BF_OpenFile(filename, &fd));
 

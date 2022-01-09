@@ -907,7 +907,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
     int fd;
 	CALL_BF(BF_OpenFile(filename, &fd));
 
-	printf("Printing Statistics on secondary index file %s\n", filename);
+	printf("Printing Statistics for secondary index file %s\n", filename);
 
 	// Access file's metadata block
 	BF_Block* block;
@@ -1000,7 +1000,7 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 
 		int avg_no_records = counter / no_data_blocks;
 
-		printf("Hash block %d :\n", i+1);
+		printf("Hash block %d :\n", i);
 		printf("- min numbers of records: %d\n", min_no_records);
 		printf("- avg numbers of records: %d\n", avg_no_records);
 		printf("- max numbers of records: %d\n", max_no_records);
