@@ -5,55 +5,17 @@
 
 #include "bf.h"
 #include "hash_file.h"
+#include "data.h"
 
-const char* names[] = {
-  "Yannis",
-  "Christofos",
-  "Sofia",
-  "Marianna",
-  "Vagelis",
-  "Maria",
-  "Iosif",
-  "Dionisis",
-  "Konstantina",
-  "Theofilos",
-  "Giorgos",
-  "Dimitris"
-};
+// can be changed 
+#define NO_RECORDS 35
+#define GLOBAL_DEPTH 2
+#define INDEX_KEY "surname"
 
-const char* surnames[] = {
-  "Ioannidis",
-  "Svingos",
-  "Karvounari",
-  "Rezkalla",
-  "Nikolopoulos",
-  "Berreta",
-  "Koronis",
-  "Gaitanis",
-  "Oikonomou",
-  "Mailis",
-  "Michas",
-  "Halatsis"
-};
-
-const char* cities[] = {
-  "Athens",
-  "San Francisco",
-  "Los Angeles",
-  "Amsterdam",
-  "London",
-  "New York",
-  "Tokyo",
-  "Hong Kong",
-  "Munich",
-  "Miami"
-};
-
-// char names[500][50];
-
-// char surnames[500][50];
-
-// char cities[300][50];
+// init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
+#define NO_NAMES 20
+#define NO_SURNAMES 20
+#define NO_CITIES 20
 
 
 #define CALL_OR_DIE(call)     \
@@ -64,79 +26,23 @@ const char* cities[] = {
       exit(code);             \
     }                         \
   }
-
-// // read and store names, surnames and cities from .txt files to char* arrays
-// void read_data(){
-//     char* file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/cities.txt";
-//     FILE *file = fopen(file_name, "r");
-
-//     if ( file == NULL ){
-//         printf("Could not open file with name: '%s' \n", file_name);
-//         exit(EXIT_FAILURE);
-//     }
-    
-//     char line[50];
-//     int i=0;
-//     while ( fgets(line, 50, file) != NULL ){
-//         memcpy(cities[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-//         i++;
-//     }
-//     fclose(file);
-
-//     file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/names.txt";
-//     file = fopen(file_name, "r");
-
-//     if ( file == NULL ){
-//         printf("Could not open file with name: '%s' \n", file_name);
-//         exit(EXIT_FAILURE);
-//     }
-    
-//     i=0;
-//     while ( fgets(line, 50, file) != NULL ){
-//         memcpy(names[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-//         i++;
-//     }
-//     fclose(file);  
-
-//     file_name = "/home/users/sdi1900066/YSBD2/Exercise_2/code/surnames.txt";
-//     file = fopen(file_name, "r");
-
-//     if ( file == NULL ){
-//         printf("Could not open file with name: '%s' \n", file_name);
-//         exit(EXIT_FAILURE);
-//     }
-    
-//     i=0;
-//     while ( fgets(line, 50, file) != NULL ){
-//         memcpy(surnames[i], &line, (strlen(line)-1)*sizeof(char));  // don't include '\n'
-//         i++;
-//     }
-//     fclose(file);  
-// }
+  
 
 int main() {
 
     BF_Init(LRU);
 
-    // read_data();    
-
     // creating first primary hash file
     char* pfilename1 = "data.db";
     char* sfilename1 = "sdata.db";
 
-    // hash on surname
-    char* index_key = "surname";
-
-    int no_records = 5;
-    int global_depth = 2;
-
     CALL_OR_DIE(HT_Init());
     
-    CALL_OR_DIE(HT_CreateIndex(pfilename1, global_depth));
+    CALL_OR_DIE(HT_CreateIndex(pfilename1, GLOBAL_DEPTH));
     int pindexDesc1;
 	CALL_OR_DIE(HT_OpenIndex(pfilename1, &pindexDesc1)); 
 
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename1, index_key, strlen(index_key), global_depth, pfilename1));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename1, INDEX_KEY, strlen(INDEX_KEY)+1, GLOBAL_DEPTH, pfilename1));
     int sindexDesc1;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename1, &sindexDesc1));
 
@@ -151,13 +57,16 @@ int main() {
     UpdateRecordArray* updateArray;
     int updateArraySize;
     
-    for (int id = 0; id < no_records; ++id) {
+    for (int id = 0; id < NO_RECORDS; ++id) {
         record.id = id;
-        r = rand() % 12;
+
+        r = rand() % NO_NAMES;
         memcpy(record.name, names[r], strlen(names[r]) + 1);
-        r = rand() % 12;
+        
+        r = rand() % NO_SURNAMES;
         memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-        r = rand() % 10;
+        
+        r = rand() % NO_CITIES;
         memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
         printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -179,10 +88,10 @@ int main() {
         SecondaryRecord srecord;
         memcpy(&srecord.tupleId, &tupleId, sizeof(int));      
         
-        if (index_key == "city") {
+        if (INDEX_KEY == "city") {
             memcpy(srecord.index_key, record.city, sizeof(char)*(strlen(record.city)+1));
         }
-        else if (index_key == "surname") {
+        else if (INDEX_KEY == "surname") {
             memcpy(srecord.index_key, record.surname, sizeof(char)*(strlen(record.surname)+1));
         }
         else {
@@ -197,28 +106,31 @@ int main() {
 
     printf("\n");
 
-    // // creating second primary hash file
+    // creating second primary hash file
     char* pfilename2 = "data2.db";
     char* sfilename2 = "sdata2.db";
 
-    CALL_OR_DIE(HT_CreateIndex(pfilename2, global_depth));
+    CALL_OR_DIE(HT_CreateIndex(pfilename2, GLOBAL_DEPTH));
     int pindexDesc2;
 	CALL_OR_DIE(HT_OpenIndex(pfilename2, &pindexDesc2)); 
 
-    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename2, index_key, strlen(index_key), global_depth, pfilename2));
+    CALL_OR_DIE(SHT_CreateSecondaryIndex(sfilename2, INDEX_KEY, strlen(INDEX_KEY)+1, GLOBAL_DEPTH, pfilename2));
     int sindexDesc2;
     CALL_OR_DIE(SHT_OpenSecondaryIndex(sfilename2, &sindexDesc2));
 
     // set the corresponding primary' s position in open_files
     open_files[sindexDesc2].which_primary = pindexDesc2;
 
-    for (int id = 0; id < no_records; ++id) {
+    for (int id = 0; id < NO_RECORDS; ++id) {
         record.id = id;
-        r = rand() % 12;
+
+        r = rand() % NO_NAMES;
         memcpy(record.name, names[r], strlen(names[r]) + 1);
-        r = rand() % 12;
+        
+        r = rand() % NO_SURNAMES;
         memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-        r = rand() % 10;
+        
+        r = rand() % NO_CITIES;
         memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
         printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
@@ -240,10 +152,10 @@ int main() {
         SecondaryRecord srecord;
         memcpy(&srecord.tupleId, &tupleId, sizeof(int));      
         
-        if (index_key == "city") {
+        if (INDEX_KEY == "city") {
             memcpy(srecord.index_key, record.city, sizeof(char)*(strlen(record.city)+1));
         }
-        else if (index_key == "surname") {
+        else if (INDEX_KEY == "surname") {
             memcpy(srecord.index_key, record.surname, sizeof(char)*(strlen(record.surname)+1));
         }
         else {
@@ -260,12 +172,12 @@ int main() {
 
     char temp[30];
 
-    if (strcmp(index_key, "city") == 0) {
-        r = rand() % 10;
+    if (strcmp(INDEX_KEY, "city") == 0) {
+        r = rand() % NO_CITIES;
         memcpy(&temp, cities[r], sizeof(char)*(strlen(cities[r])+1)); 
     }
-    else if (strcmp(index_key, "surname") == 0){
-        r = rand() % 12;
+    else if (strcmp(INDEX_KEY, "surname") == 0){
+        r = rand() % NO_SURNAMES;
         memcpy(&temp, surnames[r], sizeof(char)*(strlen(surnames[r])+1)); 
     }
     else {
@@ -273,14 +185,13 @@ int main() {
         return HT_ERROR;
     }
 
-
-    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
     printf("\n");
     
-    // CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, temp));
-    // printf("\n");
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc2, temp));
+    printf("\n");
     
-    CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, NULL));
+    CALL_OR_DIE(SHT_InnerJoin(sindexDesc1, sindexDesc2, temp));
     printf("\n");
 
     CALL_OR_DIE(HT_CloseFile(pindexDesc1));
