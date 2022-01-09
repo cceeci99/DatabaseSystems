@@ -1085,8 +1085,9 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 		SecondaryRecord record;
 		size = 2*sizeof(int);
 		for (int i = 0; i < no_records; i++) {
-			// get the record
+
 			memcpy(&record, data + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+
 			// find the record from the first secondary index
 			if ( strcmp(index_key, record.index_key) == 0 ) {
 				
@@ -1101,12 +1102,11 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 			    CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, b));
                 char* d = BF_Block_GetData(b);
 
-				// get primary record r
+				// primary record of first hash file
 				Record r;
                 memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
 				
-				// 	// for secondary record r with index_key find matching records from the second file
-
+				// find secondary record from second file, by hashing the index_key
 				byte_string = hash_function(index_key);
 				msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
 
@@ -1152,10 +1152,10 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 				size = 2*sizeof(int);
 
 				for (int i = 0; i < no_records; i++) {
-					// get the record
+
 					memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
-					// find the record from the first secondary index
+					// find matching record from second hash file
 					if ( strcmp(index_key, record2.index_key) == 0 ) {
 						joins++;
 
@@ -1169,7 +1169,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 						CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
 						char* d = BF_Block_GetData(bb);
-					
+
+						// primary record of second hash file
 						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
@@ -1252,6 +1253,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                 size = 2*sizeof(int);
 
                 for (int k = 0; k < no_records; k++) {
+					// take as index_key for join, each record from first hash file
 					int joins = 0;
 
                     memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
@@ -1268,9 +1270,11 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					CALL_BF(BF_GetBlock(open_files[p].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
+					// primary record of first hash file
                     Record r;
                     memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
-				
+					
+					// find secondary record from second file, by hashing the index_key
 					char* byte_string = hash_function(record.index_key);
 					char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
 
@@ -1319,10 +1323,10 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					size = 2*sizeof(int);
 
 					for (int i = 0; i < no_records2; i++) {
-						// get the record
+
 						memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
-						// find the record from the first secondary index
+						// find maching records from 1st and 2nd secondary indexes 
 						if ( strcmp(record.index_key, record2.index_key) == 0 ) {
 							joins++;
 
@@ -1337,9 +1341,11 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 							CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
 							char* d = BF_Block_GetData(bb);
 						
+							// primary record of second hash file
 							Record rr;
 							memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 							
+							// print join in one line
 							if (strcmp(which_key, "city")==0){
 								printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n", record.index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
 							}
@@ -1366,6 +1372,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					if (joins == 0) {
 						printf("Inner Join is empty\n");
 					}
+
 					printf("\n");
                 }
                 CALL_BF(BF_UnpinBlock(data_block));
