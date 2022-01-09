@@ -1310,47 +1310,4 @@ const char* cities[] = {
     "Yakima"
 };
 
-// const char* names[] = {
-//   "Yannis",
-//   "Christofos",
-//   "Sofia",
-//   "Marianna",
-//   "Vagelis",
-//   "Maria",
-//   "Iosif",
-//   "Dionisis",
-//   "Konstantina",
-//   "Theofilos",
-//   "Giorgos",
-//   "Dimitris"
-// };
-
-// const char* surnames[] = {
-//   "Ioannidis",
-//   "Svingos",
-//   "Karvounari",
-//   "Rezkalla",
-//   "Nikolopoulos",
-//   "Berreta",
-//   "Koronis",
-//   "Gaitanis",
-//   "Oikonomou",
-//   "Mailis",
-//   "Michas",
-//   "Halatsis"
-// };
-
-// const char* cities[] = {
-//   "Athens",
-//   "San Francisco",
-//   "Los Angeles",
-//   "Amsterdam",
-//   "London",
-//   "New York",
-//   "Tokyo",
-//   "Hong Kong",
-//   "Munich",
-//   "Miami"
-// };
-
 #endif // DATA_H
