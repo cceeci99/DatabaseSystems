@@ -12,14 +12,14 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 30
-#define GLOBAL_DEPTH 2
+#define NO_RECORDS 500
+#define GLOBAL_DEPTH 4
 #define INDEX_KEY "surname"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
-#define NO_NAMES 20
-#define NO_SURNAMES 20
-#define NO_CITIES 15
+#define NO_NAMES 300
+#define NO_SURNAMES 300
+#define NO_CITIES 200
 
 
 #define CALL_OR_DIE(call)     \
@@ -36,17 +36,11 @@ int main() {
     char no_rec[10];
     sprintf(no_rec, "%d", NO_RECORDS);
 
-    char depth[10];
-    sprintf(depth, "%d", GLOBAL_DEPTH);
-
     char* temp = "files/logs/result_";
-	char* results = malloc((strlen(no_rec) + strlen(depth) + strlen(temp) + 6) * sizeof(char));
+	char* results = malloc((strlen(no_rec) + strlen(temp) + 6) * sizeof(char));
 	results[0] = '\0';
 	strcat(results, temp);
 	strcat(results, no_rec);
-	temp = "_";
-	strcat(results, temp);
-	strcat(results, depth);
 	temp = ".txt";
 	strcat(results, temp);
 
