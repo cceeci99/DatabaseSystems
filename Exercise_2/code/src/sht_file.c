@@ -1210,7 +1210,6 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 	
 	}
 	else {
-		int joins = 0;
 
 		// since index_key is NULL print the join for every one record of the first file
 		BF_Block* block;
@@ -1253,7 +1252,10 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                 size = 2*sizeof(int);
 
                 for (int k = 0; k < no_records; k++) {
+					int joins = 0;
+
                     memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
+					printf("Inner join on index_key %s = %s\n", which_key, record.index_key);
 
                     BF_Block* b;
                     BF_Block_Init(&b);
@@ -1310,13 +1312,13 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
 					char* data2 = BF_Block_GetData(data_block2);
 
-					no_records;
-					memcpy(&no_records, data2 + 1*sizeof(int), sizeof(int));
+					int no_records2;
+					memcpy(&no_records2, data2 + 1*sizeof(int), sizeof(int));
 
 					SecondaryRecord record2;
 					size = 2*sizeof(int);
 
-					for (int i = 0; i < no_records; i++) {
+					for (int i = 0; i < no_records2; i++) {
 						// get the record
 						memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
@@ -1360,16 +1362,17 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					BF_Block_Destroy(&block2);
 
 					CALL_BF(BF_UnpinBlock(b));
+					
+					if (joins == 0) {
+						printf("Inner Join is empty\n");
+					}
+					printf("\n");
                 }
                 CALL_BF(BF_UnpinBlock(data_block));
             }
             CALL_BF(BF_UnpinBlock(block));
         }
 		
-		if (joins == 0) {
-			printf("Inner Join is empty\n");
-		}
-
         free(hash_block_ids);
 
 	    BF_Block_Destroy(&block);
