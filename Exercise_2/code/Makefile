@@ -14,16 +14,10 @@ all:
 	./run.sh
 
 run:
-	./build/runner files/hash_files/data.db 1000 2
-
-db:
-	gdb ./build/runner files/hash_files/data.db 1000 2
-
-debug:
-	gdb ./build/runner files/hash_files/data.db 1000 2
+	./build/runner files/hash_files/data.db
 
 time:
-	time ./build/runner files/hash_files/data.db 1000 2
+	time ./build/runner files/hash_files/data.db
 
 clean:
 	rm -f ./build/runner files/hash_files/*.db files/logs/*.txt *.db

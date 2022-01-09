@@ -614,8 +614,6 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		// split occured
 		open_files[indexDesc].split = 1;
 		
-		printf("\n");
-
 		// Insert again all records
 		for (int i = 0; i < no_records + 1; i++) {
 			int tuple;

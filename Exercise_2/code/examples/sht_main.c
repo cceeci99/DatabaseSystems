@@ -69,7 +69,7 @@ int main() {
         r = rand() % NO_CITIES;
         memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
-        printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
+        // printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
         CALL_OR_DIE(HT_InsertEntry(pindexDesc1, record, &tupleId, &updateArray, &updateArraySize));
         
         if (open_files[pindexDesc1].split == 1) {
@@ -100,11 +100,36 @@ int main() {
         }
 
         CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc1, srecord));
-
-        printf("\n");
     }
 
     printf("\n");
+
+    // print all entries from 1st primary hash file
+    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
+
+    // print random record from 1st primary hash file
+    int id = rand() % NO_RECORDS;
+    CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, &id));
+
+    // print all records from 1st secondary index hash file
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
+
+    // print random record from 1st secondary index hash file
+    char temp[30];
+    if (strcmp(INDEX_KEY, "city") == 0) {
+        r = rand() % NO_CITIES;
+        memcpy(&temp, cities[r], sizeof(char)*(strlen(cities[r])+1)); 
+    }
+    else if (strcmp(INDEX_KEY, "surname") == 0){
+        r = rand() % NO_SURNAMES;
+        memcpy(&temp, surnames[r], sizeof(char)*(strlen(surnames[r])+1)); 
+    }
+    else {
+        fprintf(stderr, "not available index_key\n");
+        return HT_ERROR;
+    }
+    CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
+    
 
     // creating second primary hash file
     char* pfilename2 = "data2.db";
@@ -133,7 +158,7 @@ int main() {
         r = rand() % NO_CITIES;
         memcpy(record.city, cities[r], strlen(cities[r]) + 1);
 
-        printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
+        // printf("Inserting record with id = %d , name  = %s , surname = %s , city = %s", record.id, record.name, record.surname, record.city);
         CALL_OR_DIE(HT_InsertEntry(pindexDesc2, record, &tupleId, &updateArray, &updateArraySize));
         
         if (open_files[pindexDesc2].split == 1) {
@@ -164,26 +189,10 @@ int main() {
         }
 
         CALL_OR_DIE(SHT_SecondaryInsertEntry(sindexDesc2, srecord));
-
-        printf("\n");
     }
     
     printf("\n");
 
-    char temp[30];
-
-    if (strcmp(INDEX_KEY, "city") == 0) {
-        r = rand() % NO_CITIES;
-        memcpy(&temp, cities[r], sizeof(char)*(strlen(cities[r])+1)); 
-    }
-    else if (strcmp(INDEX_KEY, "surname") == 0){
-        r = rand() % NO_SURNAMES;
-        memcpy(&temp, surnames[r], sizeof(char)*(strlen(surnames[r])+1)); 
-    }
-    else {
-        fprintf(stderr, "not available index_key\n");
-        return HT_ERROR;
-    }
 
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
     printf("\n");
