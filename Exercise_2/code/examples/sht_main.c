@@ -8,14 +8,14 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 35
+#define NO_RECORDS 50
 #define GLOBAL_DEPTH 2
 #define INDEX_KEY "surname"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
 #define NO_NAMES 20
 #define NO_SURNAMES 20
-#define NO_CITIES 20
+#define NO_CITIES 15
 
 
 #define CALL_OR_DIE(call)     \
@@ -106,13 +106,16 @@ int main() {
 
     // print all entries from 1st primary hash file
     CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, NULL));
+    printf("\n");
 
     // print random record from 1st primary hash file
     int id = rand() % NO_RECORDS;
     CALL_OR_DIE(HT_PrintAllEntries(pindexDesc1, &id));
+    printf("\n");
 
     // print all records from 1st secondary index hash file
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, NULL));
+    printf("\n");
 
     // print random record from 1st secondary index hash file
     char temp[30];
@@ -129,8 +132,9 @@ int main() {
         return HT_ERROR;
     }
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
+    printf("\n");
     
-
+   
     // creating second primary hash file
     char* pfilename2 = "data2.db";
     char* sfilename2 = "sdata2.db";
@@ -193,7 +197,8 @@ int main() {
     
     printf("\n");
 
-
+    // print secondary indexes of 2 hash files 
+    // Test InnerJoin on random index_key = temp
     CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc1, temp));
     printf("\n");
     
@@ -208,6 +213,11 @@ int main() {
 
     CALL_OR_DIE(HT_CloseFile(pindexDesc2));
     CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexDesc2));
+    
+    printf("\n");
+
+    CALL_OR_DIE(SHT_HashStatistics(sfilename1));
+    CALL_OR_DIE(SHT_HashStatistics(sfilename2));
 
     BF_Close();
 

@@ -907,6 +907,8 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
     int fd;
 	CALL_BF(BF_OpenFile(filename, &fd));
 
+	printf("Printing Statistics on secondary index file %s\n", filename);
+
 	// Access file's metadata block
 	BF_Block* block;
 	BF_Block_Init(&block);
