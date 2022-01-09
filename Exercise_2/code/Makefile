@@ -20,4 +20,4 @@ time:
 	time ./build/runner 
 
 clean:
-	rm -f ./build/runner  files/hash_files/*.db files/logs/*.txt *.db
+	rm -f ./build/runner  files/hash_files/*.db files/logs/*.txt
