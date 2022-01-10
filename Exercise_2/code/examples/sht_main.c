@@ -272,7 +272,7 @@ int main() {
     CALL_OR_DIE(SHT_PrintAllEntries(sindexes[1], key));
     printf("\n");
     
-    // Test InnerJoin on random index_key = temp
+    // Test InnerJoin on random index_key = key
     printf("\nINNER JOIN RESULT\n");
     for (int i = 0; i < 150; i++){
         printf("-");
