@@ -320,6 +320,7 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
     memcpy(&no_records, data + sizeof(int), sizeof(int));
 
     int created_new_blocks = 0;
+	
     if (no_records < SECONDARY_BLOCK_CAP) {
 		
         size = 2*sizeof(int) + no_records*sizeof(SecondaryRecord);
@@ -603,8 +604,8 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 			}
 			open_files[indexDesc].inserted--;  // avoid calculating same entry many times
 		}
-		free(records);
 
+		free(records);
 	}
 
     return HT_OK;

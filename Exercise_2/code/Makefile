@@ -13,9 +13,6 @@ sht:
 run:
 	./build/runner 
 
-valgrind:
-	valgrind --leak-check=full --track-origins=yes ./build/runner
-
 time:
 	time ./build/runner
 
