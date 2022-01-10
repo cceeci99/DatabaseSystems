@@ -658,7 +658,6 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 	}
 
 	if (id != NULL) {
-		printf("Printig record with id=%d\n", *id);
 		
 		// Get the hashed value of the id
 		char* byte_string = hash_function(*id);
@@ -729,7 +728,6 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 		BF_Block_Destroy(&data_block);
 	}
 	else {
-		printf("Printing all records of primary hash file %s\n", open_files[indexDesc].filename);
 
 		BF_Block* block;
 		BF_Block_Init(&block);

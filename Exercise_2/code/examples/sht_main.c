@@ -12,14 +12,14 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 50
+#define NO_RECORDS 30
 #define GLOBAL_DEPTH 2
 #define INDEX_KEY "surname"
 
 // init sizes of names, surnames is 500 and cities is 300, they can be changed to see better results for InnerJoin
-#define NO_NAMES 500
-#define NO_SURNAMES 500
-#define NO_CITIES 300
+#define NO_NAMES 100
+#define NO_SURNAMES 100
+#define NO_CITIES 50
 
 
 #define CALL_OR_DIE(call)     \
@@ -205,10 +205,6 @@ int main() {
         }
         printf("\n");
 
-        printf("\n- For all entries :\n");
-        CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));
-        printf("\n");
-
         char key[30];
         if (strcmp(INDEX_KEY, "city") == 0) {
             r = rand() % NO_CITIES;
@@ -225,8 +221,14 @@ int main() {
         printf("- For %s = %s\n", INDEX_KEY, key);
         CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, key));
         
+
+        printf("\n- For all entries :\n");
+        CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, NULL));
+        printf("\n");
+
         printf("\n");
     }
+    printf("\n");
 
     int r;
     char key[30];
@@ -249,7 +251,7 @@ int main() {
     }
     printf("\n");
     
-    printf("\nRECORDS FROM FIRST FILE WITH INDEX_KEY %s\n", key);
+    printf("\nRECORDS FROM FIRST FILE WITH INDEX_KEY %s = %s\n", INDEX_KEY, key);
     for (int i = 0; i < 100; i++) {
         printf("-");
     }
@@ -259,7 +261,7 @@ int main() {
     CALL_OR_DIE(SHT_PrintAllEntries(sindexes[0], key));
     printf("\n");
     
-    printf("\nRECORDS FROM SECOND FILE WITH INDEX_KEY %s\n", key);
+    printf("\nRECORDS FROM SECOND FILE WITH INDEX_KEY %s = %s\n", INDEX_KEY, key);
     for (int i = 0; i < 100; i++) {
         printf("-");
     }

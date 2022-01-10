@@ -730,8 +730,6 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
     
 	if (index_key == NULL) {
 	
-        printf("Printing all records from secondary index hash file %s with index_key = %s\n", open_files[sindexDesc].filename, which_key);
-
         BF_Block* block;
         BF_Block_Init(&block);
 
@@ -829,7 +827,6 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
     }
     else{
-        printf("Printing records with index key: %s = %s from secondary index hash file %s\n", which_key, index_key, open_files[sindexDesc].filename);
 
         char* byte_string = hash_function(index_key);
 
@@ -947,8 +944,6 @@ HT_ErrorCode SHT_HashStatistics(char *filename) {
 		// open file since it's closed
 		CALL_BF(BF_OpenFile(filename, &fd));
 	}
-
-	// printf("Printing Statistics for secondary index file %s\n", filename);
 
 	// Access file's metadata block
 	BF_Block* block;
