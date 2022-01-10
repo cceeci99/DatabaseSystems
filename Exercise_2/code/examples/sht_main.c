@@ -12,7 +12,7 @@
 #include "data.h"
 
 // can be changed 
-#define NO_RECORDS 10
+#define NO_RECORDS 23
 #define GLOBAL_DEPTH 2
 #define INDEX_KEY "surname"
 
@@ -226,24 +226,6 @@ int main() {
         CALL_OR_DIE(SHT_PrintAllEntries(sindexDesc, key));
         
         printf("\n");
-        
-        printf("PRINT STATISTICS FOR PRIMARY INDEX FILE\n");
-        for (int i=0; i < 100; i++){
-            printf("-");
-        }
-        printf("\n");
-
-        CALL_OR_DIE(HashStatistics(pfiles[f]));
-        printf("\n");
-        
-        printf("PRINT STATISTICS FOR SECONDARY INDEX FILE\n");
-        for (int i=0; i < 100; i++){
-            printf("-");
-        }
-        printf("\n");
-
-        CALL_OR_DIE(SHT_HashStatistics(sfiles[f]));
-        printf("\n");
     }
 
     int r;
@@ -304,25 +286,37 @@ int main() {
     
     CALL_OR_DIE(SHT_InnerJoin(sindexes[0], sindexes[1], NULL));
 
-	// Close file
-	printf("\nCLOSE ALL HASH FILES\n");
-	for (int i = 0; i < 50; i++) {
-		printf("-");
-	}
-    printf("\n");
+    for (int f = 0; f < 2; f++){
+        printf("PRINT STATISTICS FOR PRIMARY INDEX FILE %s\n", pfiles[f]);
+        for (int i=0; i < 100; i++){
+            printf("-");
+        }
+        printf("\n");
+        
+        CALL_OR_DIE(HashStatistics(pfiles[f]));
+        printf("\n");
+        
+        printf("PRINT STATISTICS FOR SECONDARY INDEX FILE %s\n", sfiles[f]);
+        for (int i=0; i < 100; i++){
+            printf("-");
+        }
+        printf("\n");
 
-    CALL_OR_DIE(HT_CloseFile(pindexes[0]));
-    printf("\n");
+        CALL_OR_DIE(SHT_HashStatistics(sfiles[f]));
+        
+        printf("\nCLOSE HASH FILES\n");
+        for (int i = 0; i < 50; i++) {
+            printf("-");
+        }
+        printf("\n");
+
+        CALL_OR_DIE(HT_CloseFile(pindexes[f]));
+        printf("\n");
+
+        CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexes[f]));
+        printf("\n");
+    }
    
-    CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexes[0]));
-    printf("\n");
-    
-    CALL_OR_DIE(HT_CloseFile(pindexes[1]));
-    printf("\n"); 
-
-    CALL_OR_DIE(SHT_CloseSecondaryIndex(sindexes[1]));
-    printf("\n");
-
     BF_Close();
 
     return 0;

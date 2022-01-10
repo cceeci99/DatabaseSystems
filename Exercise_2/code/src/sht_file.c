@@ -10,7 +10,7 @@
 
 #define BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2 * sizeof(int)) / sizeof(Record) ) // max records per block for primary index
 
-// ο αριθμός των εγγραφών που χωράει το δευτερεύον ευρετήριο αλλάζει καθώς αλλάζει η δομη της εγγραφής που αποθηκεύεται.
+// the number of records per block in secondary index changes because the Record struct has different size
 #define SECONDARY_BLOCK_CAP (int) ( (BF_BLOCK_SIZE - 2*sizeof(int)) / sizeof(SecondaryRecord) )	// max records per block for secondary index
 
 
@@ -48,7 +48,7 @@ static char* hash_function(const char* index_key){
 }
 
 HT_ErrorCode SHT_Init() {
-
+	// don't do anything because open_files is already initialized from HT_Init()
     return HT_OK;
 }
 
@@ -602,16 +602,19 @@ HT_ErrorCode SHT_SecondaryInsertEntry (int indexDesc, SecondaryRecord record) {
 }
 
 HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateArray, int updateArraySize) {
-	// for each record that hash changed find it in the secondary index hash file and update it's tupleId
 
  	if (indexDesc < 0 || indexDesc > MAX_OPEN_FILES) {
         fprintf(stderr, "Error: index out of bounds\n");
         return HT_ERROR;
     }
 
+	// for each record that hash changed find it in the secondary index hash file and update it's tupleId
+
 	for (int i = 0; i < updateArraySize; i++) {
     
 		char* index_key;
+
+		// find on which index_key the secondary index is hashing
 
 		if ( open_files[indexDesc].which_index_key == 'c'){
 			// hash on city
@@ -622,6 +625,7 @@ HT_ErrorCode SHT_SecondaryUpdateEntry (int indexDesc, UpdateRecordArray *updateA
 			index_key = updateArray[i].surname;
 		}
 
+		// hash the index_key and find it's block
 		char* byte_string = hash_function(index_key);
 
         char* msb = malloc((open_files[indexDesc].depth + 1)*sizeof(char));
@@ -778,12 +782,14 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                     BF_Block* b;
                     BF_Block_Init(&b);
 
+					// get record's block and position in data block from the tupleId
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
 					
-					int primaryIndex = open_files[sindexDesc].which_primary;
-
-					CALL_BF(BF_GetBlock(open_files[primaryIndex].fd, block_pos, b));
+					// the corresponding primary index file
+					int p = open_files[sindexDesc].which_primary;
+					
+					CALL_BF(BF_GetBlock(open_files[p].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
                     Record r;
@@ -872,9 +878,9 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 				
-				int primaryIndex = open_files[sindexDesc].which_primary;
+				int p = open_files[sindexDesc].which_primary;
                
-			    CALL_BF(BF_GetBlock(open_files[primaryIndex].fd , block_pos, b));
+			    CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, b));
                 char* d = BF_Block_GetData(b);
 
                 Record r;
@@ -904,10 +910,29 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 }
 
 HT_ErrorCode SHT_HashStatistics(char *filename) {
+	int is_open = 0;
     int fd;
-	CALL_BF(BF_OpenFile(filename, &fd));
 
-	printf("Printing Statistics for secondary index file %s\n", filename);
+	for (int i=0; i<MAX_OPEN_FILES; i++){
+		if (open_files[i].filename == NULL){
+			continue;
+		}
+		// search if there is an open file with filename	
+		if (strcmp(filename, open_files[i].filename) == 0) {
+			is_open = 1;
+			// get the file descriptor since it's open
+			fd = open_files[i].fd;
+			
+			break;
+		}
+	}
+
+	if (is_open == 0){
+		// open file since it's closed
+		CALL_BF(BF_OpenFile(filename, &fd));
+	}
+
+	// printf("Printing Statistics for secondary index file %s\n", filename);
 
 	// Access file's metadata block
 	BF_Block* block;
@@ -1040,6 +1065,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 		printf("Inner join on %s = %s\n", which_key, index_key);
 		int joins = 0;
 		
+		// hash the index key and find in which block it is
 		char* byte_string = hash_function(index_key);
 		char* msb = malloc((open_files[sindexDesc1].depth + 1)*sizeof(char));
 
@@ -1090,7 +1116,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 			memcpy(&record, data + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
-			// find the record from the first secondary index
+			// linear search of the records with that index key
 			if ( strcmp(index_key, record.index_key) == 0 ) {
 				
 				BF_Block* b;
@@ -1158,7 +1184,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 					memcpy(&record2, data2 + size + i * sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 
-					// find matching record from second hash file
+					// find matching records from second hash file
 					if ( strcmp(index_key, record2.index_key) == 0 ) {
 						joins++;
 
@@ -1177,6 +1203,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						Record rr;
 						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
 						
+						// PRINTING OF JOIN OPERATION 
 						if (strcmp(which_key, "city") == 0){
 							printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
 						}
@@ -1203,6 +1230,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 		}
 
 		if (joins == 0) {
+			// no joins were found
 			printf("Inner Join is empty\n");
 		}
 
@@ -1236,6 +1264,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
         BF_Block* data_block;
         BF_Block_Init(&data_block);
 
+		// for all blocks of first hash file
+
         for (int i = 0; i < no_hash_blocks; i ++) {
             CALL_BF(BF_GetBlock(open_files[sindexDesc1].fd, hash_block_ids[i], block));
             char* hash_data = BF_Block_GetData(block);
@@ -1254,7 +1284,8 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
                 SecondaryRecord record;
                 size = 2*sizeof(int);
-
+				
+				// for all records
                 for (int k = 0; k < no_records; k++) {
 					// take as index_key for join, each record from first hash file
 					int joins = 0;

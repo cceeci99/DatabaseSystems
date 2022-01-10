@@ -804,10 +804,27 @@ HT_ErrorCode HT_PrintAllEntries(int indexDesc, int *id) {
 
 
 HT_ErrorCode HashStatistics(char* filename) {
-	printf("Printing statistics for primary index hash file %s\n", filename);
-	
-	int fd;
-	CALL_BF(BF_OpenFile(filename, &fd));
+	int is_open = 0;
+    int fd;
+
+	for (int i=0; i<MAX_OPEN_FILES; i++){
+		if (open_files[i].filename == NULL){
+			continue;
+		}
+		// search if there is an open file with filename	
+		if (strcmp(filename, open_files[i].filename) == 0) {
+			is_open = 1;
+			// get the file descriptor since it's open
+			fd = open_files[i].fd;
+			
+			break;
+		}
+	}
+
+	if (is_open == 0){
+		// open file since it's closed
+		CALL_BF(BF_OpenFile(filename, &fd));
+	}
 
 	// Access file's metadata block
 	BF_Block* block;
