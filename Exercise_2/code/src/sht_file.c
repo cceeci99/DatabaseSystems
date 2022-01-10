@@ -1135,21 +1135,21 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                 memcpy(&r, d + size + record_pos*sizeof(Record), sizeof(Record));
 				
 				// find secondary record from second file, by hashing the index_key
-				char* byte_string = hash_function(index_key);
-				char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
+				char* byte_string2 = hash_function(index_key);
+				char* msb2 = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
 
 				for (int i = 0; i < open_files[sindexDesc2].depth; i++) {
-					msb[i] = byte_string[i];
+					msb2[i] = byte_string2[i];
 				}
 
-				msb[open_files[sindexDesc2].depth] = '\0';
+				msb2[open_files[sindexDesc2].depth] = '\0';
 
-				char* tmp;
-				int bucket = strtol(msb, &tmp, 2);
-				free(msb);
+				char* tmp2;
+				int bucket2 = strtol(msb2, &tmp2, 2);
+				free(msb2);
 
-				int hash_block_index = bucket / HASH_CAP;
-				int hash_block_pos = bucket % HASH_CAP;
+				int hash_block_index2 = bucket2 / HASH_CAP;
+				int hash_block_pos2 = bucket2 % HASH_CAP;
 
 				BF_Block* block2;
 				BF_Block_Init(&block2);
@@ -1159,19 +1159,21 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 
 				size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
 
-				memcpy(&actual_hash_block_id, metadata2 + size + hash_block_index*sizeof(int), sizeof(int));
+				int actual_hash_block_id2;
+				memcpy(&actual_hash_block_id2, metadata2 + size + hash_block_index2*sizeof(int), sizeof(int));
 
 				CALL_BF(BF_UnpinBlock(block2));
 
-				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
+				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id2, block2));
 				char* hash_data2 = BF_Block_GetData(block2);
 
-				memcpy(&data_block_id, hash_data2 + hash_block_pos*sizeof(int), sizeof(int));
+				int data_block_id2;
+				memcpy(&data_block_id2, hash_data2 + hash_block_pos2*sizeof(int), sizeof(int));
 
 				BF_Block* data_block2;
 				BF_Block_Init(&data_block2);
 
-				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
+				CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id2, data_block2));
 				char* data2 = BF_Block_GetData(data_block2);
 
 				int no_records2;
@@ -1188,34 +1190,34 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					if ( strcmp(index_key, record2.index_key) == 0 ) {
 						joins++;
 
-						BF_Block* bb;
-						BF_Block_Init(&bb);
+						BF_Block* b2;
+						BF_Block_Init(&b2);
 
-						int block_pos = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
-						int record_pos = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+						int block_pos2 = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
+						int record_pos2 = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 						
-						int p = open_files[sindexDesc2].which_primary;
+						int p2 = open_files[sindexDesc2].which_primary;
 
-						CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
-						char* d = BF_Block_GetData(bb);
+						CALL_BF(BF_GetBlock(open_files[p2].fd , block_pos2, b2));
+						char* d2 = BF_Block_GetData(b2);
 
 						// primary record of second hash file
-						Record rr;
-						memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
+						Record r2;
+						memcpy(&r2, d2 + size + record_pos2*sizeof(Record), sizeof(Record));
 						
 						// PRINTING OF JOIN OPERATION 
 						if (strcmp(which_key, "city") == 0){
-							printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+							printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n",index_key, r.id, r.name, r.city, r2.id, r2.name, r2.city);
 						}
 						else if (strcmp(which_key, "surname") == 0) {
-							printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n",index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+							printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n",index_key, r.id, r.name, r.city, r2.id, r2.name, r2.city);
 						}
 						else {
 							fprintf(stderr, "not available index key\n");
 							return HT_ERROR;
 						}
 					
-						CALL_BF(BF_UnpinBlock(bb));
+						CALL_BF(BF_UnpinBlock(b2));
 					}
 				}
 
@@ -1329,25 +1331,25 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					BF_Block_Init(&block2);
 
 					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, 0, block2));
-					char* metadata = BF_Block_GetData(block2);
+					char* metadata2 = BF_Block_GetData(block2);
 
 					size = HASH_ID_LEN*sizeof(char) + 1*sizeof(char) + 2*sizeof(int);
 					
 					int actual_hash_block_id;
-					memcpy(&actual_hash_block_id, metadata + size + hash_block_index*sizeof(int), sizeof(int));
+					memcpy(&actual_hash_block_id, metadata2 + size + hash_block_index*sizeof(int), sizeof(int));
 
 					CALL_BF(BF_UnpinBlock(block2));
 
 					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, actual_hash_block_id, block2));
-					char* hash_data = BF_Block_GetData(block2);
+					char* hash_data2 = BF_Block_GetData(block2);
 
-					int data_block_id;
-					memcpy(&data_block_id, hash_data + hash_block_pos*sizeof(int), sizeof(int));
+					int data_block_id2;
+					memcpy(&data_block_id2, hash_data2 + hash_block_pos*sizeof(int), sizeof(int));
 
 					BF_Block* data_block2;
 					BF_Block_Init(&data_block2);
 
-					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id, data_block2));
+					CALL_BF(BF_GetBlock(open_files[sindexDesc2].fd, data_block_id2, data_block2));
 					char* data2 = BF_Block_GetData(data_block2);
 
 					int no_records2;
@@ -1364,34 +1366,34 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						if ( strcmp(record.index_key, record2.index_key) == 0 ) {
 							joins++;
 
-							BF_Block* bb;
-							BF_Block_Init(&bb);
+							BF_Block* b2;
+							BF_Block_Init(&b2);
 
-							int block_pos = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
-							int record_pos = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
+							int block_pos2 = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
+							int record_pos2 = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 							
-							int p = open_files[sindexDesc2].which_primary;
+							int p2 = open_files[sindexDesc2].which_primary;
 
-							CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, bb));
-							char* d = BF_Block_GetData(bb);
+							CALL_BF(BF_GetBlock(open_files[p2].fd , block_pos2, b2));
+							char* d2 = BF_Block_GetData(b2);
 						
 							// primary record of second hash file
-							Record rr;
-							memcpy(&rr, d + size + record_pos*sizeof(Record), sizeof(Record));
+							Record r2;
+							memcpy(&r2, d2 + size + record_pos2*sizeof(Record), sizeof(Record));
 							
 							// print join in one line
 							if (strcmp(which_key, "city")==0){
-								printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n", record.index_key, r.id, r.name, r.surname, rr.id, rr.name, rr.surname);
+								printf("%s | id = %d | name = %s | surname = %s | id = %d | name = %s | surname = %s |\n", record.index_key, r.id, r.name, r.surname, r2.id, r2.name, r2.surname);
 							}
 							else if (strcmp(which_key, "surname") == 0) {
-								printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n", record.index_key, r.id, r.name, r.city, rr.id, rr.name, rr.city);
+								printf("%s | id = %d | name = %s | city = %s | id = %d | name = %s | city = %s |\n", record.index_key, r.id, r.name, r.city, r2.id, r2.name, r2.city);
 							}
 							else {
 								fprintf(stderr, "not available index-key\n");
 								return HT_ERROR;
 							}
 						
-							CALL_BF(BF_UnpinBlock(bb));
+							CALL_BF(BF_UnpinBlock(b2));
 						}
 					}
 
