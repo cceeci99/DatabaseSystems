@@ -326,8 +326,12 @@ HT_ErrorCode HT_InsertEntry(int indexDesc, Record record, int *tupleId, UpdateRe
 		sz = 2 * sizeof(int) + no_records * sizeof(Record);
 		memcpy(data + sz, &record, sizeof(Record));
 
+		// BLOCK_CAP = 8 records
 		*tupleId = data_block_id*BLOCK_CAP + no_records;	// no_records is the position of the record
-
+		
+		// UNCOMMENT to see the tupleId for each record that is inserted and check if it's matching with the tupleId of secondary record
+		// printf("\nInserting record with id = %d on block = %d record pos = %d (tupleId = %d)\n", record.id, data_block_id, no_records, *tupleId);
+		
 		// Update data block's number of records
 		no_records++;
 		memcpy(data + 1 * sizeof(int), &no_records, sizeof(int));
