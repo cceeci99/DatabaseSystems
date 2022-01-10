@@ -14,12 +14,24 @@ typedef enum HT_ErrorCode {
 } HT_ErrorCode;
 
 
+// Record is used by both SHT and HT
 typedef struct Record {
 	int id;
 	char name[15];
 	char surname[20];
 	char city[20];
 } Record;
+
+
+// UpdateRecordArray is used by both SHT and HT
+typedef struct {
+	char surname[20];
+	char city[20];
+	int oldTupleId; // old position of record before inserting the new record
+	int newTupleId; // new position of record after it was moved by inserting the new record
+	
+} UpdateRecordArray;
+
 
 typedef struct HF_Info {
     int fd;
@@ -28,9 +40,9 @@ typedef struct HF_Info {
 	int no_buckets;
 	int no_hash_blocks;
 	const char* filename;
-	// extra fields
+
 	int index_type; 					// 1 for primary, 0 for secondary
-	int which_primary;					// θέση στον πινακα των ανοικτών αρχείων του αντίστοιχου αρχείου πρωτευοντος ευρετηριου πανω στο οποίο δημιουργείται το δευτερεύον
+	int which_primary;					// corresponding primary file of the secondary index that is created
 	char which_index_key;				// 'c' for city, 's' for surname
 	int split;							// 1 if there was a split on primary index 0, if not
 

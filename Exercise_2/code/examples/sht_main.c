@@ -9,6 +9,8 @@
 
 #include "bf.h"
 #include "hash_file.h"
+#include "sht_file.h"
+
 #include "data.h"
 
 // can be changed 

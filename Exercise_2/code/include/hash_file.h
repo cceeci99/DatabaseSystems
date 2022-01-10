@@ -2,7 +2,6 @@
 #define HASH_FILE_H
 
 #include "ht.h"
-#include "sht_file.h"
 
 
 /*

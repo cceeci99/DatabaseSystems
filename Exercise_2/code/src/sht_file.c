@@ -3,8 +3,6 @@
 #include <string.h>
 
 #include "bf.h"
-#include "ht.h"
-
 #include "sht_file.h"
 
 
