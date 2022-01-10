@@ -319,5 +319,7 @@ int main() {
    
     BF_Close();
 
+    free(results);
+
     return 0;
 }

@@ -225,6 +225,15 @@ HT_ErrorCode SHT_OpenSecondaryIndex(const char *sfileName, int *indexDesc) {
 		i++;
 	}
 
+	// Free BF_block pointer
+	BF_Block_Destroy(&block);
+
+	// Reached limit of open files
+	if (flag) {
+		fprintf(stderr, "Error: maximum number of open hash files is %d\n", MAX_OPEN_FILES);
+		return HT_ERROR;
+	}
+
     return HT_OK;
 }
 
@@ -779,9 +788,6 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 
                     printf("Record {index_key=%s, tupleId=%d}\n", record.index_key, record.tupleId);
 
-                    BF_Block* b;
-                    BF_Block_Init(&b);
-
 					// get record's block and position in data block from the tupleId
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
@@ -789,6 +795,9 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 					// the corresponding primary index file
 					int p = open_files[sindexDesc].which_primary;
 					
+                    BF_Block* b;
+                    BF_Block_Init(&b);
+
 					CALL_BF(BF_GetBlock(open_files[p].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
@@ -800,18 +809,22 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
 					printf("\n");
 
                     CALL_BF(BF_UnpinBlock(b));
+					BF_Block_Destroy(&b);
                 }
-                CALL_BF(BF_UnpinBlock(data_block));
-            }
+            
+			    CALL_BF(BF_UnpinBlock(data_block));
+            
+			}
+
             CALL_BF(BF_UnpinBlock(block));
         }
 
+        printf("\nTotal number of records : %d\n", counter);
+
         free(hash_block_ids);
 
-        printf("\nTotal number of records : %d\n", counter);
-        
+	    BF_Block_Destroy(&data_block);        
 	    BF_Block_Destroy(&block);
-	    BF_Block_Destroy(&data_block);
 
     }
     else{
@@ -872,14 +885,14 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
             if (strcmp(index_key, record.index_key) == 0) {
                 printf("Record {index_key=%s, tupleId=%d}\n", record.index_key, record.tupleId);
 
-                BF_Block* b;
-                BF_Block_Init(&b);
-
                 int block_pos = record.tupleId / BLOCK_CAP; // get in which data_block is the record
                 int record_pos = record.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 				
 				int p = open_files[sindexDesc].which_primary;
                
+			    BF_Block* b;
+                BF_Block_Init(&b);
+
 			    CALL_BF(BF_GetBlock(open_files[p].fd , block_pos, b));
                 char* d = BF_Block_GetData(b);
 
@@ -891,7 +904,8 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
                 counter++;
 				printf("\n");
 
-                CALL_BF(BF_UnpinBlock(b));			
+                CALL_BF(BF_UnpinBlock(b));		
+				BF_Block_Destroy(&b);	
             }
         }
 
@@ -902,8 +916,9 @@ HT_ErrorCode SHT_PrintAllEntries(int sindexDesc, char *index_key) {
         CALL_BF(BF_UnpinBlock(data_block));
         CALL_BF(BF_UnpinBlock(block));
 
-        BF_Block_Destroy(&block);
         BF_Block_Destroy(&data_block);
+        BF_Block_Destroy(&block);
+
     }
 
     return HT_OK;
@@ -1218,6 +1233,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						}
 					
 						CALL_BF(BF_UnpinBlock(b2));
+						BF_Block_Destroy(&b2);
 					}
 				}
 
@@ -1228,6 +1244,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 				BF_Block_Destroy(&block2);
 
 				CALL_BF(BF_UnpinBlock(b));
+				BF_Block_Destroy(&b);
 			}
 		}
 
@@ -1295,21 +1312,21 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
                     memcpy(&record, data + size + k*sizeof(SecondaryRecord), sizeof(SecondaryRecord));
 					printf("Inner join on index_key %s = %s\n", which_key, record.index_key);
 
-                    BF_Block* b;
-                    BF_Block_Init(&b);
-
                     int block_pos = record.tupleId / BLOCK_CAP;
                     int record_pos = record.tupleId % BLOCK_CAP;
 					
 					int p = open_files[sindexDesc1].which_primary;
 
+    				BF_Block* b;
+                    BF_Block_Init(&b);
+					
 					CALL_BF(BF_GetBlock(open_files[p].fd, block_pos, b));
                     char* d = BF_Block_GetData(b);
 
 					// primary record of first hash file
                     Record r;
                     memcpy(&r, d + 2*sizeof(int) + record_pos*sizeof(Record), sizeof(Record));
-					
+
 					// find secondary record from second file, by hashing the index_key
 					char* byte_string = hash_function(record.index_key);
 					char* msb = malloc((open_files[sindexDesc2].depth + 1)*sizeof(char));
@@ -1366,14 +1383,14 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 						if ( strcmp(record.index_key, record2.index_key) == 0 ) {
 							joins++;
 
-							BF_Block* b2;
-							BF_Block_Init(&b2);
-
 							int block_pos2 = record2.tupleId / BLOCK_CAP; // get in which data_block is the record
 							int record_pos2 = record2.tupleId % BLOCK_CAP;    // get the position of record in the data_block
 							
 							int p2 = open_files[sindexDesc2].which_primary;
-
+							
+							BF_Block* b2;
+							BF_Block_Init(&b2);
+							
 							CALL_BF(BF_GetBlock(open_files[p2].fd , block_pos2, b2));
 							char* d2 = BF_Block_GetData(b2);
 						
@@ -1394,6 +1411,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 							}
 						
 							CALL_BF(BF_UnpinBlock(b2));
+							BF_Block_Destroy(&b2);
 						}
 					}
 
@@ -1404,6 +1422,7 @@ HT_ErrorCode SHT_InnerJoin(int sindexDesc1, int sindexDesc2,  char *index_key) {
 					BF_Block_Destroy(&block2);
 
 					CALL_BF(BF_UnpinBlock(b));
+					BF_Block_Destroy(&b);
 					
 					if (joins == 0) {
 						printf("Inner Join is empty\n");

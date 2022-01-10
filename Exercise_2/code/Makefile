@@ -14,10 +14,10 @@ run:
 	./build/runner 
 
 valgrind:
-	valgrind --leak-check=full ./build/runner
+	valgrind --leak-check=full --track-origins=yes ./build/runner
 
 time:
-	time ./build/runner 
+	time ./build/runner
 
 clean:
 	rm -f ./build/runner  files/hash_files/*.db files/logs/*.txt
